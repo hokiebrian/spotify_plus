@@ -12,7 +12,7 @@ I'm not providing any lovelace at this time as I leverage a lot of templates, an
 
 ***
 ### Music Machine:
-Use the Services Tab to select which somng features you want to use to narrow your generated set of songs. 
+Use the Services Tab to select which song features you want to use to narrow your generated set of songs. 
 
 <img src="/images/music_machine.png" width=40%>
 

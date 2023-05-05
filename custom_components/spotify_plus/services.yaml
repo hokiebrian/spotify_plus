@@ -1,0 +1,267 @@
+get_song_data:
+  name: Get Song Data
+  description: Update Spotify Song Data
+spotify_extras:
+  name: Spotify Extras
+  description: Spotify Queue and Recent Items
+spotify_manage_artist:
+  name: Add Artist to Spotify
+  description: Add Artist to Spotify Library
+  fields:
+    artist_id:
+      name: Artist ID
+      description: ID of Artits to follow (adds current artist if blank)
+      example: 6deZN1bslXzeGvOLaLMOIF
+      required: false
+      selector:
+        text:
+spotify_manage_album:
+  name: Add Album to Spotify
+  description: Add Album to Spotify Library
+  fields:
+    album_id:
+      name: Album ID
+      description: ID of Album to add (adds current album if blank)
+      example: 5fKL7vMTXvhR9tov8Kqt3u
+      required: false
+      selector:
+        text:
+spotify_manage_track:
+  name: Add Track to Spotify
+  description: Add Track to Spotify Library
+  fields:
+    track_id:
+      name: Track URI
+      description: URI of Track to add (adds current track if blank)
+      example: spotify:track:0gmbgwZ8iqyMPmXefof8Yf
+      required: false
+      selector:
+        text:
+spotify_manage_playlist:
+  name: Add Playlist to Spotify
+  description: Add Playlist to Spotify Library
+  fields:
+    playlist_id:
+      name: Playlist ID
+      description: ID of Playlist to add (adds current playlist if blank)
+      example: 37i9dQZF1DZ06evO3FkgtG
+      required: false
+      selector:
+        text:
+spotify_details:
+  name: Get Spotify Extras
+  description: Update Spotify Extras
+spotify_add_to_history:
+  name: Spotify History
+  description: Add to History Playlist
+spotify_analysis:
+  name: Spotify Analysis
+  description: Analyze Play History for Artist Frequency
+spotify_playlists:
+  name: Spotify Playlists
+  description: Update your playlist details and analysis
+spotify_my_artists:
+  name: Spotify My Artists
+  description: Update info on Artists you follow
+spotify_top_artists:
+  name: Spotify Top Artists
+  description: Update info on your Top 100 Artists
+spotify_search:
+  name: Search Spotify
+  description: Search Spotify
+  fields:
+    search_term:
+      name: Search Term
+      description: Search Term
+      example: The Beatles
+      required: true
+      selector:
+        text:
+    search_type:
+      name: Search Type
+      description: General or Artist Profile Search?
+      required: true
+      example: true
+      selector:
+        select:
+          options:
+            - label: Artist Profile
+              value: "Artist Profile"
+            - label: General Search
+              value: "General Search"  
+spotify_music_machine:
+  name: Spotify Music Machine
+  description: Create Custom Listening
+  fields:
+      valence:
+        name: Valence
+        description: "The mood of the songs"
+        example: 50
+        required: false
+        default: 50
+        selector: 
+          number:
+            min: 0
+            max: 100
+            step: 1
+            mode: box
+      energy:
+        name: Energy
+        description: "The energy of the songs"
+        example: 50
+        required: false
+        default: 50
+        selector: 
+          number:
+            min: 0
+            max: 100
+            step: 1
+            mode: box
+      acousticness:
+        name: Acousticness
+        description: "The acoustic weight of the songs"
+        example: 50
+        required: false
+        default: 50
+        selector: 
+          number:
+            min: 0
+            max: 100
+            step: 1
+            mode: box
+      popularity:
+        name: Popularity
+        description: "The popularity of the songs"
+        example: 50
+        required: false
+        default: 50
+        selector: 
+          number:
+            min: 0
+            max: 100
+            step: 1
+            mode: box
+      danceability:
+        name: Danceability
+        description: "The danceability of the songs"
+        example: 50
+        required: false
+        default: 50
+        selector: 
+          number:
+            min: 0
+            max: 100
+            step: 1
+            mode: box
+      instrumentalness:
+        name: Instrumentalness
+        description: "The instrumental element of the songs"
+        example: 20
+        required: false
+        default: 20
+        selector: 
+          number:
+            min: 0
+            max: 100
+            step: 1
+            mode: box
+      liveness:
+        name: Liveness
+        description: "Likelihood of a live performance"
+        example: 20
+        required: false
+        default: 20
+        selector: 
+          number:
+            min: 0
+            max: 100
+            step: 1
+            mode: box
+      speechiness:
+        name: Speechiness
+        description: "Presence of spoken word outside of instrumentation"
+        example: 20
+        required: false
+        default: 20
+        selector: 
+          number:
+            min: 0
+            max: 100
+            step: 1
+            mode: box
+      name:
+        name: Playlist Name
+        description: "The name of the playlist, ignored if 'Create Playlist' not selected"
+        example: My Playlist
+        required: true
+        default: "My Playlist"
+        selector: 
+          text:
+      count:
+        name: Artist Count
+        description: "The number of Top Artists considered. Max 100, ignored if My Artists used"
+        example: 100
+        required: true
+        default: 100
+        selector: 
+          number:
+            min: 0
+            max: 100
+            step: 1
+            mode: box
+      focus:
+        name: My Artists
+        description: "Use My Artists? (Top Artists is default)"
+        example: true
+        selector:
+          boolean:
+        required: true
+      time_range:
+        name: Top Artists Time Range
+        description: "short_term, medium_term, long_term"
+        example: medium_term
+        default: "long_term"
+        selector:
+          select:
+            options:
+              - label: Short Term (1m)
+                value: "short_term"
+              - label: Medium Term (6y)
+                value: "medium_term"
+              - label: Long Term (Years)
+                value: "long_term"
+        required: true
+      create_playlist:
+        name: Create Playlist
+        description: "Enable to enshrine selection as a playlist"
+        example: true
+        selector:
+          boolean:
+        required: true
+      play_now:
+        name: Play Upon Creation
+        description: "Play the new playlist on the active device"
+        example: false
+        selector:
+          boolean:
+        required: true
+      device_name:
+        name: Device Name
+        description: "The name of the device to play on. If blank, current device will be used."
+        example: Living Room
+        required: false
+        default: "Living Room"
+        selector: 
+          text:
+      tolerance:
+        name: Recommendation Tolerance
+        description: "Percent tolerance of track recommendations"
+        example: 20
+        required: false
+        default: 20
+        selector: 
+          number:
+            min: 10
+            max: 50
+            step: 1
+            mode: box

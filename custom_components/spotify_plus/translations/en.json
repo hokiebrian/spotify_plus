@@ -1,0 +1,14 @@
+{
+    "options": {
+        "step": {
+            "init": {
+                "description": "Enter the optional information",
+                "data": {
+                    "app_name": "Spotify Plus",
+                    "mm_api_token": "MusixMatch API Token",
+                    "spotify_history_playlist_id": "Spotify Playlist History ID"
+                }
+            }
+        }
+    }   
+}

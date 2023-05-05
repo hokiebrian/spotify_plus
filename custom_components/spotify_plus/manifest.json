@@ -1,0 +1,14 @@
+{
+    "domain": "spotify_plus",
+    "name": "Spotify Plus",
+    "codeowners": ["@hokiebrian"],
+    "config_flow": true,
+    "dependencies": ["application_credentials"],
+    "documentation": "https://github.com/hokiebrian/spotify_plus",
+    "iot_class":  "cloud_polling",
+    "issue_tracker": "https://github.com/hokiebrian/spotify_plus/issues",
+    "requirements": [
+      "spotipy>=2.22.1"
+    ],
+    "version": "0.6.0"
+  }

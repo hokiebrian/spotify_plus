@@ -56,7 +56,7 @@ Usage:
 - Set your artists and playlists to refresh at whatever interval you choose. They do not poll at all unless called upon, but the data will survive restarts. 
 - Use auto-entities or Markdown cards to generate cards for your artists, playlists, search results, queue, recent items, etc. (Examples to be provided at a future date)
 - Use Song Info to visualize current track parameters (Energy, Valence, etc.)
-- See [examples.md](/examples.md) for interface examples
+- See [EXAMPLES](/examples.md) for interface examples
 
 ### Stand-alone Sensors:
 #### `sensor.spotify_plus` - This reflects your User Profile with Spotify. It will provide your profile name, image, the number of artists, albums and track you follow/like and your available listening devices.

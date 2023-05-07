@@ -197,7 +197,14 @@ class SpotifyPlus(SensorEntity):
         spotify_playlist_number_task = self.hass.async_add_executor_job(
             self.data.client.current_user_playlists, 1)
 
-        spotify_me, spotify_artist_number, spotify_track_number, spotify_album_number, spotify_playlist_number = await asyncio.gather(
+
+        (
+            spotify_me,
+            spotify_artist_number,
+            spotify_track_number,
+            spotify_album_number,
+            spotify_playlist_number
+        ) = await asyncio.gather(
             spotify_me_task,
             spotify_artist_number_task,
             spotify_track_number_task,
@@ -214,7 +221,7 @@ class SpotifyPlus(SensorEntity):
 
         if len(spotify_me["images"]) > 0:
             self._profile_image = spotify_me["images"][0].get("url")
-        
+
         self._extra_attributes = {
             "display_name": spotify_me.get("display_name"),
             "country": spotify_me.get("country"),

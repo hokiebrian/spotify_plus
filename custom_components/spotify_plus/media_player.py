@@ -416,13 +416,37 @@ class SpotifyMediaPlayer(MediaPlayerEntity):
             self._current_track_length_readable = duration_str
             self._current_track_length = duration_ms
             self._current_track_progress = current_playback.get('progress_ms', {})
-            self._current_track_percent = int((self._current_track_progress / self._current_track_length) * 100)
-            self._current_artist_id = current_playback.get('item', {}).get('artists', [{}])[0].get('id')
-            self._current_album_id = current_playback.get('item', {}).get('album', {}).get('id')
-            self._current_album_img = current_playback.get('item', {}).get('album', {}).get('images')
-            self._current_album_name = current_playback.get('item', {}).get('album', {}).get('name')
-            self._current_track_isrc = current_playback.get('item', {}).get('external_ids', {}).get('isrc', '').upper()
-            self._current_device_id = current_playback.get('device', {}).get('id')
+
+            self._current_track_percent = int(
+                (self._current_track_progress / self._current_track_length) * 100
+            )
+
+            self._current_artist_id = (
+                current_playback.get('item', {}).get('artists', [{}])[0].get('id')
+            )
+
+            self._current_album_id = (
+                current_playback.get('item', {}).get('album', {}).get('id')
+            )
+
+            self._current_album_img = (
+                current_playback.get('item', {}).get('album', {}).get('images')
+            )
+
+            self._current_album_name = (
+                current_playback.get('item', {}).get('album', {}).get('name')
+            )
+
+            self._current_track_isrc = (
+                current_playback.get('item', {})
+                .get('external_ids', {})
+                .get('isrc', '')
+                .upper()
+            )
+
+            self._current_device_id = (
+                current_playback.get('device', {}).get('id')
+            )
 
         if self._current_album_img is None:
             self._spotify_album_img = None

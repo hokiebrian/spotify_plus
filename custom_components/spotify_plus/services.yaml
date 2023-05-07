@@ -240,14 +240,14 @@ spotify_music_machine:
         required: true
       play_now:
         name: Play Upon Creation
-        description: "Play the new playlist on the active device"
+        description: "Play the new playlist or queue on the active device"
         example: false
         selector:
           boolean:
         required: true
       device_name:
         name: Device Name
-        description: "The name of the device to play on. If blank, current device will be used."
+        description: "The name (not ID) of the device to play on. If blank, current device will be used."
         example: Living Room
         required: false
         default: "Living Room"
@@ -255,7 +255,7 @@ spotify_music_machine:
           text:
       tolerance:
         name: Recommendation Tolerance
-        description: "Percent tolerance of track recommendations"
+        description: "Tolerance range of track recommendations"
         example: 20
         required: false
         default: 20

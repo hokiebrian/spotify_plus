@@ -107,7 +107,11 @@ class SpotifySensorOptionsFlow(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema({
-                vol.Optional("mm_api_token", default=self.config_entry.options.get('mm_api_token', '')): str,
-                vol.Optional("spotify_history_playlist_id", default=self.config_entry.options.get('spotify_history_playlist_id', '')): str,
+                vol.Optional("mm_api_token",
+                default=self.config_entry.options.get('mm_api_token', '')
+                ): str,
+                vol.Optional("spotify_history_playlist_id",
+                default=self.config_entry.options.get('spotify_history_playlist_id', '')
+                ): str,
             })
         )

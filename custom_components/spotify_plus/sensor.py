@@ -24,12 +24,13 @@ from .const import DOMAIN, SPOTIFY_SCOPES, _LOGGER
 
 SCAN_INTERVAL = timedelta(minutes=30)
 
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """ Setup Sensors """
+    """Setup Sensors"""
     spotifyplus = SpotifyPlus(
         hass.data[DOMAIN][entry.entry_id],
         entry.data[CONF_ID],
@@ -112,7 +113,7 @@ async def async_setup_entry(
         add_to_history,
         playlists,
         tools,
-        ]
+    ]
 
     for sensor in sensors:
         async_add_entities([sensor], True)
@@ -121,11 +122,15 @@ async def async_setup_entry(
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload the sensors created by this integration."""
     unload_ok = await asyncio.gather(
-        *[sensor.async_remove() for sensor in hass.data[DOMAIN][entry.entry_id]["sensors"]]
+        *[
+            sensor.async_remove()
+            for sensor in hass.data[DOMAIN][entry.entry_id]["sensors"]
+        ]
     )
     if all(unload_ok):
         hass.data[DOMAIN].pop(entry.entry_id)
     return all(unload_ok)
+
 
 class SpotifyPlus(SensorEntity):
     """Representation of a Spotify controller."""
@@ -189,21 +194,24 @@ class SpotifyPlus(SensorEntity):
         ## Get user profile highlights
         spotify_me_task = self.hass.async_add_executor_job(self.data.client.me)
         spotify_artist_number_task = self.hass.async_add_executor_job(
-            self.data.client.current_user_followed_artists, 1)
+            self.data.client.current_user_followed_artists, 1
+        )
         spotify_track_number_task = self.hass.async_add_executor_job(
-            self.data.client.current_user_saved_tracks, 1)
+            self.data.client.current_user_saved_tracks, 1
+        )
         spotify_album_number_task = self.hass.async_add_executor_job(
-            self.data.client.current_user_saved_albums, 1)
+            self.data.client.current_user_saved_albums, 1
+        )
         spotify_playlist_number_task = self.hass.async_add_executor_job(
-            self.data.client.current_user_playlists, 1)
-
+            self.data.client.current_user_playlists, 1
+        )
 
         (
             spotify_me,
             spotify_artist_number,
             spotify_track_number,
             spotify_album_number,
-            spotify_playlist_number
+            spotify_playlist_number,
         ) = await asyncio.gather(
             spotify_me_task,
             spotify_artist_number_task,

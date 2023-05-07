@@ -7,17 +7,26 @@ from datetime import datetime
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.entity import DeviceInfo
 from . import HomeAssistantSpotifyData
-from .const import DOMAIN, _LOGGER, MUSIC_REC_TOLERANCE, MUSIC_REC_TRACK_COUNT, MUSIC_PLAYLIST_DESC
+from .const import (
+    DOMAIN,
+    _LOGGER,
+    MUSIC_REC_TOLERANCE,
+    MUSIC_REC_TRACK_COUNT,
+    MUSIC_PLAYLIST_DESC,
+)
+
 
 class SpotifyMusicMachine(RestoreEntity):
-    """Build a Custom Music Experience."""  
+    """Build a Custom Music Experience."""
 
     platform = "sensor"
     config_flow_class = None
 
     _attr_icon = "mdi:playlist-plus"
 
-    def __init__(self, data: HomeAssistantSpotifyData, user_id: str, name: str, user_country: str):
+    def __init__(
+        self, data: HomeAssistantSpotifyData, user_id: str, name: str, user_country: str
+    ):
         """Initialize the sensor."""
         self.data = data
         self._id = user_id
@@ -34,7 +43,9 @@ class SpotifyMusicMachine(RestoreEntity):
         )
 
     async def async_added_to_hass(self):
-        self.hass.services.async_register(DOMAIN, "spotify_music_machine", self.spotify_music_machine)
+        self.hass.services.async_register(
+            DOMAIN, "spotify_music_machine", self.spotify_music_machine
+        )
         last_state = await self.async_get_last_state()
         if last_state is not None:
             self._state = last_state.state
@@ -63,141 +74,193 @@ class SpotifyMusicMachine(RestoreEntity):
         return self._extra_attributes
 
     async def spotify_music_machine(self, call):
-        """ Build New Set of Songs(Tracks) """
+        """Build New Set of Songs(Tracks)"""
         try:
-            MIN_MAX_TOLERANCE = (call.data['tolerance'] / 100)
+            MIN_MAX_TOLERANCE = call.data["tolerance"] / 100
         except KeyError:
             MIN_MAX_TOLERANCE = self._tolerance
-        playlist_name = call.data['name']
-        artist_count = int(float(call.data['count']))
-        artist_focus = call.data['focus']
-        time_range = call.data['time_range']
-        play_now = call.data['play_now']
-        create_playlist = call.data['create_playlist']
+        playlist_name = call.data["name"]
+        artist_count = int(float(call.data["count"]))
+        artist_focus = call.data["focus"]
+        time_range = call.data["time_range"]
+        play_now = call.data["play_now"]
+        create_playlist = call.data["create_playlist"]
         existing_pl_flag = False
         playlist_desc = self._playlist_desc
         context_playlist = "Queue Only"
         artists = []
         tracks = []
         now = datetime.now()
-        formatted_time = now.strftime('%Y-%m-%d %H:%M:%S')
+        formatted_time = now.strftime("%Y-%m-%d %H:%M:%S")
 
         try:
-            device_name = call.data['device_name']
+            device_name = call.data["device_name"]
             for device in self.data.devices.data:
                 if device["name"] == device_name:
-                    self.hass.async_add_executor_job(self.data.client.transfer_playback, device["id"])        
+                    self.hass.async_add_executor_job(
+                        self.data.client.transfer_playback, device["id"]
+                    )
         except KeyError:
             device_name = None
 
         try:
-            TARGET_VALENCE = float(call.data['valence']) / 100
+            TARGET_VALENCE = float(call.data["valence"]) / 100
             TARGET_VALENCE_MIN = round(max(TARGET_VALENCE - MIN_MAX_TOLERANCE, 0), 2)
             TARGET_VALENCE_MAX = round(min(TARGET_VALENCE + MIN_MAX_TOLERANCE, 1.0), 2)
         except (TypeError, ValueError, KeyError):
             TARGET_VALENCE = None
 
         try:
-            TARGET_ENERGY = float(call.data['energy']) / 100
+            TARGET_ENERGY = float(call.data["energy"]) / 100
             TARGET_ENERGY_MIN = round(max(TARGET_ENERGY - MIN_MAX_TOLERANCE, 0), 2)
             TARGET_ENERGY_MAX = round(min(TARGET_ENERGY + MIN_MAX_TOLERANCE, 1.0), 2)
             if TARGET_ENERGY == 1:
-                TARGET_ENERGY_MIN = .90
+                TARGET_ENERGY_MIN = 0.90
         except (TypeError, ValueError, KeyError):
             TARGET_ENERGY = None
 
         try:
-            TARGET_ACOUSTIC = float(call.data['acousticness']) / 100
+            TARGET_ACOUSTIC = float(call.data["acousticness"]) / 100
             TARGET_ACOUSTIC_MIN = round(max(TARGET_ACOUSTIC - MIN_MAX_TOLERANCE, 0), 2)
-            TARGET_ACOUSTIC_MAX = round(min(TARGET_ACOUSTIC + MIN_MAX_TOLERANCE, 1.0), 2)
+            TARGET_ACOUSTIC_MAX = round(
+                min(TARGET_ACOUSTIC + MIN_MAX_TOLERANCE, 1.0), 2
+            )
             ## Clamping to get more accurate results
             if TARGET_ACOUSTIC == 0:
-                TARGET_ACOUSTIC_MAX = .10
+                TARGET_ACOUSTIC_MAX = 0.10
             if 0.10 <= TARGET_ACOUSTIC <= 0.20:
-                TARGET_ACOUSTIC_MIN = .01
+                TARGET_ACOUSTIC_MIN = 0.01
         except (TypeError, ValueError, KeyError):
             TARGET_ACOUSTIC = None
 
         try:
-            TARGET_DANCE = float(call.data['danceability']) / 100
+            TARGET_DANCE = float(call.data["danceability"]) / 100
             TARGET_DANCE_MIN = round(max(TARGET_DANCE - MIN_MAX_TOLERANCE, 0), 2)
             TARGET_DANCE_MAX = round(min(TARGET_DANCE + MIN_MAX_TOLERANCE, 1.0), 2)
         except (TypeError, ValueError, KeyError):
             TARGET_DANCE = None
 
         try:
-            TARGET_INSTRUMENTAL = float(call.data['instrumentalness']) / 100
-            TARGET_INSTRUMENTAL_MIN = round(max(TARGET_INSTRUMENTAL - MIN_MAX_TOLERANCE, 0), 2)
-            TARGET_INSTRUMENTAL_MAX = round(min(TARGET_INSTRUMENTAL + MIN_MAX_TOLERANCE, 1.0), 2)
+            TARGET_INSTRUMENTAL = float(call.data["instrumentalness"]) / 100
+            TARGET_INSTRUMENTAL_MIN = round(
+                max(TARGET_INSTRUMENTAL - MIN_MAX_TOLERANCE, 0), 2
+            )
+            TARGET_INSTRUMENTAL_MAX = round(
+                min(TARGET_INSTRUMENTAL + MIN_MAX_TOLERANCE, 1.0), 2
+            )
         except (TypeError, ValueError, KeyError):
             TARGET_INSTRUMENTAL = None
 
         try:
-            TARGET_LIVENESS = float(call.data['liveness']) / 100
+            TARGET_LIVENESS = float(call.data["liveness"]) / 100
             TARGET_LIVENESS_MIN = round(max(TARGET_LIVENESS - MIN_MAX_TOLERANCE, 0), 2)
-            TARGET_LIVENESS_MAX = round(min(TARGET_LIVENESS + MIN_MAX_TOLERANCE, 1.0), 2)
+            TARGET_LIVENESS_MAX = round(
+                min(TARGET_LIVENESS + MIN_MAX_TOLERANCE, 1.0), 2
+            )
         except (TypeError, ValueError, KeyError):
             TARGET_LIVENESS = None
 
         try:
-            TARGET_SPEECHINESS = float(call.data['speechiness']) / 100
-            TARGET_SPEECHINESS_MIN = round(max(TARGET_SPEECHINESS - MIN_MAX_TOLERANCE, 0), 2)
-            TARGET_SPEECHINESS_MAX = round(min(TARGET_SPEECHINESS + MIN_MAX_TOLERANCE, 1.0), 2)
+            TARGET_SPEECHINESS = float(call.data["speechiness"]) / 100
+            TARGET_SPEECHINESS_MIN = round(
+                max(TARGET_SPEECHINESS - MIN_MAX_TOLERANCE, 0), 2
+            )
+            TARGET_SPEECHINESS_MAX = round(
+                min(TARGET_SPEECHINESS + MIN_MAX_TOLERANCE, 1.0), 2
+            )
         except (TypeError, ValueError, KeyError):
             TARGET_SPEECHINESS = None
 
         try:
-            TARGET_POP = int(float(call.data['popularity']))
-            TARGET_POP_MIN = int(max(TARGET_POP- (MIN_MAX_TOLERANCE * 100), 0))
+            TARGET_POP = int(float(call.data["popularity"]))
+            TARGET_POP_MIN = int(max(TARGET_POP - (MIN_MAX_TOLERANCE * 100), 0))
             TARGET_POP_MAX = int(min(TARGET_POP + (MIN_MAX_TOLERANCE * 100), 100))
         except (TypeError, ValueError, KeyError):
             TARGET_POP = None
 
         ## This is a hack to get beyond 50 Top Tracks to 99
-        resultst1_task = self.hass.async_add_executor_job(self.data.client.current_user_top_tracks, 49, 0, time_range)
-        resultst2_task = self.hass.async_add_executor_job(self.data.client.current_user_top_tracks, 50, 49, time_range)
+        resultst1_task = self.hass.async_add_executor_job(
+            self.data.client.current_user_top_tracks, 49, 0, time_range
+        )
+        resultst2_task = self.hass.async_add_executor_job(
+            self.data.client.current_user_top_tracks, 50, 49, time_range
+        )
         resultst1, resultst2 = await asyncio.gather(resultst1_task, resultst2_task)
 
-        top_tracks = [(track["id"], track["name"]) for result in (resultst1, resultst2) for track in result["items"]]
+        top_tracks = [
+            (track["id"], track["name"])
+            for result in (resultst1, resultst2)
+            for track in result["items"]
+        ]
         tracks.extend(top_tracks)
 
         random_tracks = random.sample(tracks, k=5)
         random_track_ids, random_track_names = zip(*random_tracks)
 
-        playlists = await self.hass.async_add_executor_job(self.data.client.current_user_playlists)
-        for playlist in playlists['items']:
-            if playlist['name'] == playlist_name:
+        playlists = await self.hass.async_add_executor_job(
+            self.data.client.current_user_playlists
+        )
+        for playlist in playlists["items"]:
+            if playlist["name"] == playlist_name:
                 existing_pl_flag = True
-                existing_playlist_uri = playlist['uri']
-                existing_playlist_items = await self.hass.async_add_executor_job(self.data.client.playlist_items, existing_playlist_uri, 'items(track(uri))', 100)
-                existing_playlist_item_uris = [item['track']['uri'] for item in existing_playlist_items['items']]
-                await self.hass.async_add_executor_job(self.data.client.playlist_remove_all_occurrences_of_items, existing_playlist_uri, existing_playlist_item_uris)
+                existing_playlist_uri = playlist["uri"]
+                existing_playlist_items = await self.hass.async_add_executor_job(
+                    self.data.client.playlist_items,
+                    existing_playlist_uri,
+                    "items(track(uri))",
+                    100,
+                )
+                existing_playlist_item_uris = [
+                    item["track"]["uri"] for item in existing_playlist_items["items"]
+                ]
+                await self.hass.async_add_executor_job(
+                    self.data.client.playlist_remove_all_occurrences_of_items,
+                    existing_playlist_uri,
+                    existing_playlist_item_uris,
+                )
 
         if artist_focus:
-        ## Option for playlist from my followed artists or my top artists. If my artists, no time_range applies
-            results = await self.hass.async_add_executor_job(self.data.client.current_user_followed_artists, 50)
+            ## Option for playlist from my followed artists or my top artists. If my artists, no time_range applies
+            results = await self.hass.async_add_executor_job(
+                self.data.client.current_user_followed_artists, 50
+            )
 
             while results:
-                artists.extend((artist["id"], artist["name"], artist["genres"]) for artist in results["artists"]["items"])
+                artists.extend(
+                    (artist["id"], artist["name"], artist["genres"])
+                    for artist in results["artists"]["items"]
+                )
                 if results["artists"]["next"]:
-                    results = await self.hass.async_add_executor_job(self.data.client.next, (results["artists"]))
+                    results = await self.hass.async_add_executor_job(
+                        self.data.client.next, (results["artists"])
+                    )
                 else:
                     break
 
         else:
-        ## Spotify is only supposed to allow 50 Top Artists. Calling the max with an offset of 49 can get a total of 99
-            results1_task = self.hass.async_add_executor_job(self.data.client.current_user_top_artists, 49, 0, time_range)
-            results2_task = self.hass.async_add_executor_job(self.data.client.current_user_top_artists, 50, 49, time_range)
+            ## Spotify is only supposed to allow 50 Top Artists. Calling the max with an offset of 49 can get a total of 99
+            results1_task = self.hass.async_add_executor_job(
+                self.data.client.current_user_top_artists, 49, 0, time_range
+            )
+            results2_task = self.hass.async_add_executor_job(
+                self.data.client.current_user_top_artists, 50, 49, time_range
+            )
             results1, results2 = await asyncio.gather(results1_task, results2_task)
 
-            artists = [(artist["id"], artist["name"], artist["genres"]) for result in (results1, results2) for artist in result["items"]]
+            artists = [
+                (artist["id"], artist["name"], artist["genres"])
+                for result in (results1, results2)
+                for artist in result["items"]
+            ]
             artists = artists[:artist_count]
 
         _LOGGER.debug("Spotify Artist List Retrieved")
 
         random_artists = random.sample(artists, k=10)
         random_artist_ids, random_artist_names, unique_genres = zip(*random_artists)
-        unique_genres = list(set(genre for artist in random_artists for genre in artist[2]))
+        unique_genres = list(
+            set(genre for artist in random_artists for genre in artist[2])
+        )
         unique_genres = sorted(unique_genres)
 
         params = {
@@ -240,24 +303,37 @@ class SpotifyMusicMachine(RestoreEntity):
         params3 = params.copy()
         params3["seed_tracks"] = list(random_track_ids[:5])
 
-        recs1_task = self.hass.async_add_executor_job(lambda: self.data.client.recommendations(**params1))
-        recs2_task = self.hass.async_add_executor_job(lambda: self.data.client.recommendations(**params2))
-        recs3_task = self.hass.async_add_executor_job(lambda: self.data.client.recommendations(**params3))
+        recs1_task = self.hass.async_add_executor_job(
+            lambda: self.data.client.recommendations(**params1)
+        )
+        recs2_task = self.hass.async_add_executor_job(
+            lambda: self.data.client.recommendations(**params2)
+        )
+        recs3_task = self.hass.async_add_executor_job(
+            lambda: self.data.client.recommendations(**params3)
+        )
         _LOGGER.debug("Spotify Parameters %s", params)
 
         recs1, recs2, recs3 = await asyncio.gather(recs1_task, recs2_task, recs3_task)
 
-        rec_tracks = list(set([tracks['uri'] for tracks in recs1['tracks']] + [tracks['uri'] for tracks in recs2['tracks']]))
+        rec_tracks = list(
+            set(
+                [tracks["uri"] for tracks in recs1["tracks"]]
+                + [tracks["uri"] for tracks in recs2["tracks"]]
+            )
+        )
 
         ## Checks if song list is less than 50% of the intended size. If so, add in 25% from Top Tracks seed.
-        if len(rec_tracks) < int(self._track_count/2):
-            recs3_tracks = [track['uri'] for track in recs3['tracks']]
+        if len(rec_tracks) < int(self._track_count / 2):
+            recs3_tracks = [track["uri"] for track in recs3["tracks"]]
             random.shuffle(recs3_tracks)  # Shuffle the tracks in place
-            rec_tracks = list(set(
-                [track['uri'] for track in recs1['tracks']] +
-                [track['uri'] for track in recs2['tracks']] +
-                recs3_tracks[:int(self._track_count/4)]
-            ))
+            rec_tracks = list(
+                set(
+                    [track["uri"] for track in recs1["tracks"]]
+                    + [track["uri"] for track in recs2["tracks"]]
+                    + recs3_tracks[: int(self._track_count / 4)]
+                )
+            )
 
         ## Shuffle it up a few times
         rec_tracks = random.sample(rec_tracks, min(len(rec_tracks), 100))
@@ -268,42 +344,71 @@ class SpotifyMusicMachine(RestoreEntity):
         if create_playlist:
             try:
                 if existing_pl_flag:
-                    await self.hass.async_add_executor_job(self.data.client.user_playlist_add_tracks, self._id, existing_playlist_uri, list(rec_tracks))
-                    await self.hass.async_add_executor_job(self.data.client.user_playlist_change_details, self._id, existing_playlist_uri, playlist_name, False, False, playlist_desc)
+                    await self.hass.async_add_executor_job(
+                        self.data.client.user_playlist_add_tracks,
+                        self._id,
+                        existing_playlist_uri,
+                        list(rec_tracks),
+                    )
+                    await self.hass.async_add_executor_job(
+                        self.data.client.user_playlist_change_details,
+                        self._id,
+                        existing_playlist_uri,
+                        playlist_name,
+                        False,
+                        False,
+                        playlist_desc,
+                    )
                     context_playlist = existing_playlist_uri
                 else:
-                    create_playlist = await self.hass.async_add_executor_job(self.data.client.user_playlist_create, self._id, playlist_name, False, False, playlist_desc)
-                    context_playlist = create_playlist['uri']
-                    await self.hass.async_add_executor_job(self.data.client.user_playlist_add_tracks, self._id, context_playlist, list(rec_tracks))
+                    create_playlist = await self.hass.async_add_executor_job(
+                        self.data.client.user_playlist_create,
+                        self._id,
+                        playlist_name,
+                        False,
+                        False,
+                        playlist_desc,
+                    )
+                    context_playlist = create_playlist["uri"]
+                    await self.hass.async_add_executor_job(
+                        self.data.client.user_playlist_add_tracks,
+                        self._id,
+                        context_playlist,
+                        list(rec_tracks),
+                    )
             except Exception as err:
                 _LOGGER.error("Playlist Creation Failure: %s", err)
         _LOGGER.debug("Playlist URI %s", context_playlist)
 
         if play_now and not create_playlist:
-            await self.hass.async_add_executor_job(self.data.client.start_playback, None, None, rec_tracks)
+            await self.hass.async_add_executor_job(
+                self.data.client.start_playback, None, None, rec_tracks
+            )
             playlist_name = "Queue Only"
             _LOGGER.debug("Queue Created")
 
         if play_now and create_playlist:
-            await self.hass.async_add_executor_job(self.data.client.start_playback, None, context_playlist)
+            await self.hass.async_add_executor_job(
+                self.data.client.start_playback, None, context_playlist
+            )
             _LOGGER.debug("Playlist %s Created", context_playlist)
 
         seed_details = {
-            "Recs1": recs1['seeds'],
-            "Recs2": recs2['seeds'],
-            "Recs3": recs3['seeds'],
-            }
+            "Recs1": recs1["seeds"],
+            "Recs2": recs2["seeds"],
+            "Recs3": recs3["seeds"],
+        }
 
         results_meta = {
-            "Playlist Name": playlist_name, 
-            "Playlist ID": context_playlist, 
-            "Number of Tracks": len(rec_tracks), 
-            "Artists": random_artist_names, 
-            "Tracks": list(random_track_names), 
-            "Genres": unique_genres, 
-            "Stats": params, 
-            "Seed Details": seed_details
-            }
+            "Playlist Name": playlist_name,
+            "Playlist ID": context_playlist,
+            "Number of Tracks": len(rec_tracks),
+            "Artists": random_artist_names,
+            "Tracks": list(random_track_names),
+            "Genres": unique_genres,
+            "Stats": params,
+            "Seed Details": seed_details,
+        }
 
         self._state = formatted_time
         self._extra_attributes = results_meta

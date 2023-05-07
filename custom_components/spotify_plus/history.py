@@ -7,14 +7,14 @@ from homeassistant.helpers.entity import DeviceInfo
 from . import HomeAssistantSpotifyData
 from .const import DOMAIN, _LOGGER
 
+
 class SpotifyAddToHistory(Entity):
-    """Spotify History Sensor."""   
+    """Spotify History Sensor."""
 
     platform = "sensor"
     config_flow_class = None
 
     _attr_icon = "mdi:file-document-edit"
-
 
     def __init__(
         self,
@@ -22,9 +22,8 @@ class SpotifyAddToHistory(Entity):
         user_id: str,
         name: str,
         user_country: str,
-        spotify_history_playlist_id: str
-        ):
-
+        spotify_history_playlist_id: str,
+    ):
         """Initialize the sensor."""
         self.data = data
         self._id = user_id
@@ -40,10 +39,8 @@ class SpotifyAddToHistory(Entity):
 
     async def async_added_to_hass(self):
         self.hass.services.async_register(
-            DOMAIN,
-            "spotify_add_to_history",
-            self.spotify_add_to_history
-            )
+            DOMAIN, "spotify_add_to_history", self.spotify_add_to_history
+        )
 
     @property
     def name(self):
@@ -71,9 +68,8 @@ class SpotifyAddToHistory(Entity):
         """Add the current playing track to the specified history playlist."""
 
         current_track = await self.hass.async_add_executor_job(
-            self.data.client.currently_playing,
-            self._user_country
-            )
+            self.data.client.currently_playing, self._user_country
+        )
 
         ## Timestamp addition
         ## Delete existing occurances, add new item to top
@@ -83,13 +79,13 @@ class SpotifyAddToHistory(Entity):
             await self.hass.async_add_executor_job(
                 self.data.client.playlist_remove_all_occurrences_of_items,
                 self._history_playlist_id,
-                [current_track['item']['uri']]
+                [current_track["item"]["uri"]],
             )
             await self.hass.async_add_executor_job(
                 self.data.client.playlist_add_items,
                 self._history_playlist_id,
-                [current_track['item']['uri']],
-                0
+                [current_track["item"]["uri"]],
+                0,
             )
             self._state = f"Added {current_track['item']['name']}"
             _LOGGER.debug("Track added to History")
@@ -98,16 +94,15 @@ class SpotifyAddToHistory(Entity):
 
         ## Get updated playlist metadata
         playlist_data = await self.hass.async_add_executor_job(
-            self.data.client.playlist,
-            self._history_playlist_id
-            )
+            self.data.client.playlist, self._history_playlist_id
+        )
 
-        playlist_track_total_count = playlist_data['tracks']['total']
-        playlist_image = playlist_data['images']
+        playlist_track_total_count = playlist_data["tracks"]["total"]
+        playlist_image = playlist_data["images"]
 
         self._extra_attributes = {
             "Added at": added_time,
             "Song Count": playlist_track_total_count,
-            "Playlist Image": playlist_image
-            }
+            "Playlist Image": playlist_image,
+        }
         self.async_write_ha_state()

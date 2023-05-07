@@ -7,15 +7,18 @@ from homeassistant.helpers.entity import DeviceInfo
 from . import HomeAssistantSpotifyData
 from .const import DOMAIN, _LOGGER
 
+
 class SpotifyExtras(Entity):
-    """Spotify Extras Sensor."""   
+    """Spotify Extras Sensor."""
 
     platform = "sensor"
     config_flow_class = None
 
     _attr_icon = "mdi:newspaper-variant"
 
-    def __init__(self, data: HomeAssistantSpotifyData, user_id: str, name: str, user_country: str):
+    def __init__(
+        self, data: HomeAssistantSpotifyData, user_id: str, name: str, user_country: str
+    ):
         """Initialize the sensor."""
         self._id = user_id
         self._name = name
@@ -61,28 +64,32 @@ class SpotifyExtras(Entity):
         try:
             spotify_queue, spotify_recent = await asyncio.gather(
                 self.hass.async_add_executor_job(self.data.client.queue),
-                self.hass.async_add_executor_job(self.data.client.current_user_recently_played, 30),
+                self.hass.async_add_executor_job(
+                    self.data.client.current_user_recently_played, 30
+                ),
             )
         except Exception as err:
             _LOGGER.error("Spotify Queue and Recent Error: %s", err)
-            spotify_queue = {'queue': []}
-            spotify_recent = {'items': []}
+            spotify_queue = {"queue": []}
+            spotify_recent = {"items": []}
 
         ## Build Queue Data
-        queue_list = [{
-            "trackname": track['name'],
-            "trackartist": track['artists'][0]['name'],
-            "trackuri": track['uri'],
-            "trackid": track['id'],
-            "image": track['album'].get('images', [{}])[0].get('url')
-        } for track in spotify_queue.get('queue', [])]
+        queue_list = [
+            {
+                "trackname": track["name"],
+                "trackartist": track["artists"][0]["name"],
+                "trackuri": track["uri"],
+                "trackid": track["id"],
+                "image": track["album"].get("images", [{}])[0].get("url"),
+            }
+            for track in spotify_queue.get("queue", [])
+        ]
 
         ## Bulk check if items are in library, merge with queue items
         uris = [track["trackuri"] for track in queue_list]
         check_follow = await self.hass.async_add_executor_job(
-            self.data.client.current_user_saved_tracks_contains,
-            uris
-            )
+            self.data.client.current_user_saved_tracks_contains, uris
+        )
 
         for track, value in zip(queue_list, check_follow):
             track["saved"] = value
@@ -90,20 +97,22 @@ class SpotifyExtras(Entity):
         _LOGGER.debug("Queue Retrieved")
 
         ## Build Recent Items Data
-        recent_list = [{
-            "trackname": item['track']['name'],
-            "trackartist": item['track']['artists'][0]['name'],
-            "trackuri": item['track']['uri'],
-            "image": item['track']['album'].get('images', [{}])[0].get('url'),
-            "played": item['played_at'],
-        } for item in spotify_recent.get('items', [])]
+        recent_list = [
+            {
+                "trackname": item["track"]["name"],
+                "trackartist": item["track"]["artists"][0]["name"],
+                "trackuri": item["track"]["uri"],
+                "image": item["track"]["album"].get("images", [{}])[0].get("url"),
+                "played": item["played_at"],
+            }
+            for item in spotify_recent.get("items", [])
+        ]
 
         ## Bulk check if items are in library, merge with recent items
         uris = [track["trackuri"] for track in recent_list]
         check_follow = await self.hass.async_add_executor_job(
-            self.data.client.current_user_saved_tracks_contains,
-            uris
-            )
+            self.data.client.current_user_saved_tracks_contains, uris
+        )
 
         for track, value in zip(recent_list, check_follow):
             track["saved"] = value

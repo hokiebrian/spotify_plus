@@ -15,6 +15,7 @@ from homeassistant.core import callback
 
 from .const import DOMAIN, SPOTIFY_SCOPES
 
+
 class SpotifyFlowHandler(
     config_entry_oauth2_flow.AbstractOAuth2FlowHandler, domain=DOMAIN
 ):
@@ -91,6 +92,7 @@ class SpotifyFlowHandler(
         """Get the options flow for this handler."""
         return SpotifySensorOptionsFlow(config_entry)
 
+
 class SpotifySensorOptionsFlow(config_entries.OptionsFlow):
     """Spotify Sensor config flow."""
 
@@ -106,12 +108,18 @@ class SpotifySensorOptionsFlow(config_entries.OptionsFlow):
 
         return self.async_show_form(
             step_id="init",
-            data_schema=vol.Schema({
-                vol.Optional("mm_api_token",
-                default=self.config_entry.options.get('mm_api_token', '')
-                ): str,
-                vol.Optional("spotify_history_playlist_id",
-                default=self.config_entry.options.get('spotify_history_playlist_id', '')
-                ): str,
-            })
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(
+                        "mm_api_token",
+                        default=self.config_entry.options.get("mm_api_token", ""),
+                    ): str,
+                    vol.Optional(
+                        "spotify_history_playlist_id",
+                        default=self.config_entry.options.get(
+                            "spotify_history_playlist_id", ""
+                        ),
+                    ): str,
+                }
+            ),
         )

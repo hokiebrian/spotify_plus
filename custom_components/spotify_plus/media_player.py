@@ -26,7 +26,13 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util.dt import utc_from_timestamp
 
 from . import HomeAssistantSpotifyData
-from .const import DOMAIN, _LOGGER, MEDIA_PLAYER_PREFIX, PLAYABLE_MEDIA_TYPES, SPOTIFY_SCOPES
+from .const import (
+    DOMAIN,
+    _LOGGER,
+    MEDIA_PLAYER_PREFIX,
+    PLAYABLE_MEDIA_TYPES,
+    SPOTIFY_SCOPES,
+)
 
 
 SCAN_INTERVAL = timedelta(seconds=3)
@@ -53,6 +59,7 @@ REPEAT_MODE_MAPPING_TO_HA = {
 REPEAT_MODE_MAPPING_TO_SPOTIFY = {
     value: key for key, value in REPEAT_MODE_MAPPING_TO_HA.items()
 }
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -403,9 +410,8 @@ class SpotifyMediaPlayer(MediaPlayerEntity):
 
         ## Add additional attributes to media_player entity. This requires no additional API calls.
         if current_playback is not None:
-
             try:
-                duration_ms = current_playback['item']['duration_ms']
+                duration_ms = current_playback["item"]["duration_ms"]
                 duration_sec = duration_ms // 1000
                 minutes, seconds = divmod(duration_sec, 60)
                 duration_str = f"{minutes:02d}:{seconds:02d}"
@@ -415,43 +421,41 @@ class SpotifyMediaPlayer(MediaPlayerEntity):
 
             self._current_track_length_readable = duration_str
             self._current_track_length = duration_ms
-            self._current_track_progress = current_playback.get('progress_ms', {})
+            self._current_track_progress = current_playback.get("progress_ms", {})
 
             self._current_track_percent = int(
                 (self._current_track_progress / self._current_track_length) * 100
             )
 
             self._current_artist_id = (
-                current_playback.get('item', {}).get('artists', [{}])[0].get('id')
+                current_playback.get("item", {}).get("artists", [{}])[0].get("id")
             )
 
             self._current_album_id = (
-                current_playback.get('item', {}).get('album', {}).get('id')
+                current_playback.get("item", {}).get("album", {}).get("id")
             )
 
             self._current_album_img = (
-                current_playback.get('item', {}).get('album', {}).get('images')
+                current_playback.get("item", {}).get("album", {}).get("images")
             )
 
             self._current_album_name = (
-                current_playback.get('item', {}).get('album', {}).get('name')
+                current_playback.get("item", {}).get("album", {}).get("name")
             )
 
             self._current_track_isrc = (
-                current_playback.get('item', {})
-                .get('external_ids', {})
-                .get('isrc', '')
+                current_playback.get("item", {})
+                .get("external_ids", {})
+                .get("isrc", "")
                 .upper()
             )
 
-            self._current_device_id = (
-                current_playback.get('device', {}).get('id')
-            )
+            self._current_device_id = current_playback.get("device", {}).get("id")
 
         if self._current_album_img is None:
             self._spotify_album_img = None
         else:
-            self._spotify_album_img = self._current_album_img[0].get('url', '')
+            self._spotify_album_img = self._current_album_img[0].get("url", "")
 
         self._extra_attributes = {
             "media_artist_id": self._current_artist_id,

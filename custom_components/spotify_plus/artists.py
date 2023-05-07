@@ -7,15 +7,18 @@ from homeassistant.helpers.entity import DeviceInfo
 from . import HomeAssistantSpotifyData
 from .const import DOMAIN, _LOGGER
 
+
 class SpotifyMyArtists(RestoreEntity):
-    """Spotify My Artist Tools."""  
+    """Spotify My Artist Tools."""
 
     platform = "sensor"
     config_flow_class = None
 
     _attr_icon = "mdi:account-music"
 
-    def __init__(self, data: HomeAssistantSpotifyData, user_id: str, name: str, user_country: str):
+    def __init__(
+        self, data: HomeAssistantSpotifyData, user_id: str, name: str, user_country: str
+    ):
         """Initialize the sensor."""
         self._id = user_id
         self._name = name
@@ -29,7 +32,9 @@ class SpotifyMyArtists(RestoreEntity):
         )
 
     async def async_added_to_hass(self):
-        self.hass.services.async_register(DOMAIN, "spotify_my_artists", self.spotify_my_artists)
+        self.hass.services.async_register(
+            DOMAIN, "spotify_my_artists", self.spotify_my_artists
+        )
         last_state = await self.async_get_last_state()
         if last_state is not None:
             self._state = last_state.state
@@ -58,64 +63,62 @@ class SpotifyMyArtists(RestoreEntity):
         return self._extra_attributes
 
     async def search_playlists_async(self, semaphore, artist):
-        """ Search for Artist Playlists."""
+        """Search for Artist Playlists."""
         async with semaphore:
-            artist_playlist_uri1 = 'spotify:'
-            artist_playlist_uri2 = 'spotify:'
-            artist_playlist_name1 = 'N/A'
-            artist_playlist_name2 = 'N/A'
+            artist_playlist_uri1 = "spotify:"
+            artist_playlist_uri2 = "spotify:"
+            artist_playlist_name1 = "N/A"
+            artist_playlist_name2 = "N/A"
 
-            artist_name = artist['name']
+            artist_name = artist["name"]
             search_param = artist_name.lower()
             pl1 = "This Is " + artist_name
             pl2 = artist_name + " Radio"
             srch = await self.hass.async_add_executor_job(
-                self.data.client.search, search_param,
+                self.data.client.search,
+                search_param,
                 20,
                 0,
                 "playlist",
-                self._user_country
-                )
+                self._user_country,
+            )
 
-            if srch['playlists']['items']:
-                for p_list in srch['playlists']['items']:
-                    if p_list.get('owner', {}).get('id', '') == 'spotify':
-                        if p_list['name'] == pl1:
-                            artist_playlist_uri1 = p_list['uri']
-                            artist_playlist_name1 = p_list['name']
-                        elif p_list['name'] == pl2:
-                            artist_playlist_uri2 = p_list['uri']
-                            artist_playlist_name2 = p_list['name']
+            if srch["playlists"]["items"]:
+                for p_list in srch["playlists"]["items"]:
+                    if p_list.get("owner", {}).get("id", "") == "spotify":
+                        if p_list["name"] == pl1:
+                            artist_playlist_uri1 = p_list["uri"]
+                            artist_playlist_name1 = p_list["name"]
+                        elif p_list["name"] == pl2:
+                            artist_playlist_uri2 = p_list["uri"]
+                            artist_playlist_name2 = p_list["name"]
 
             return {
-                'name': artist['name'],
-                'uri': artist['uri'],
-                'image': artist['images'][0]['url'],
-                'artist_playlist_name': artist_playlist_name1,
-                'artist_playlist': artist_playlist_uri1,
-                'artist_radio_name': artist_playlist_name2,
-                'artist_radio': artist_playlist_uri2
+                "name": artist["name"],
+                "uri": artist["uri"],
+                "image": artist["images"][0]["url"],
+                "artist_playlist_name": artist_playlist_name1,
+                "artist_playlist": artist_playlist_uri1,
+                "artist_radio_name": artist_playlist_name2,
+                "artist_radio": artist_playlist_uri2,
             }
 
     async def spotify_my_artists(self, call):
-        """ Gather 'My Artists' and get details."""
+        """Gather 'My Artists' and get details."""
         artist_items = []
         artists = []
 
         my_artists = await self.hass.async_add_executor_job(
-            self.data.client.current_user_followed_artists,
-            50
-            )
-        artist_items = my_artists['artists']['items']
+            self.data.client.current_user_followed_artists, 50
+        )
+        artist_items = my_artists["artists"]["items"]
 
-        while my_artists['artists']['next']:
-            cur = my_artists['artists']['cursors']['after']
+        while my_artists["artists"]["next"]:
+            cur = my_artists["artists"]["cursors"]["after"]
             my_artists = await self.hass.async_add_executor_job(
-                self.data.client.current_user_followed_artists,
-                50,
-                cur
-                )
-            artist_items += my_artists['artists']['items']
+                self.data.client.current_user_followed_artists, 50, cur
+            )
+            artist_items += my_artists["artists"]["items"]
 
         semaphore = asyncio.Semaphore(8)
         tasks = []
@@ -123,7 +126,7 @@ class SpotifyMyArtists(RestoreEntity):
             tasks.append(self.search_playlists_async(semaphore, artist))
         artist_results = await asyncio.gather(*tasks)
 
-        artists = sorted(artist_results, key=lambda x: x['name'].replace("The ", ""))
+        artists = sorted(artist_results, key=lambda x: x["name"].replace("The ", ""))
 
         _LOGGER.debug("My Artists retrieved and sorted")
 
@@ -133,14 +136,16 @@ class SpotifyMyArtists(RestoreEntity):
 
 
 class SpotifyTopArtists(RestoreEntity):
-    """Spotify Top Artist Tools."""  
+    """Spotify Top Artist Tools."""
 
     platform = "sensor"
     config_flow_class = None
 
     _attr_icon = "mdi:account-music"
 
-    def __init__(self, data: HomeAssistantSpotifyData, user_id: str, name: str, user_country: str):
+    def __init__(
+        self, data: HomeAssistantSpotifyData, user_id: str, name: str, user_country: str
+    ):
         """Initialize the sensor."""
         self._id = user_id
         self._name = name
@@ -154,7 +159,9 @@ class SpotifyTopArtists(RestoreEntity):
         )
 
     async def async_added_to_hass(self):
-        self.hass.services.async_register(DOMAIN, "spotify_top_artists", self.spotify_top_artists)
+        self.hass.services.async_register(
+            DOMAIN, "spotify_top_artists", self.spotify_top_artists
+        )
         last_state = await self.async_get_last_state()
         if last_state is not None:
             self._state = last_state.state
@@ -183,14 +190,14 @@ class SpotifyTopArtists(RestoreEntity):
         return self._extra_attributes
 
     async def search_playlists_async(self, semaphore, artist):
-        """ Search for Artist Playlists."""
+        """Search for Artist Playlists."""
         async with semaphore:
-            artist_playlist_uri_1 = 'spotify:'
-            artist_playlist_uri_2 = 'spotify:'
-            artist_playlist_name_1 = 'N/A'
-            artist_playlist_name_2 = 'N/A'
+            artist_playlist_uri_1 = "spotify:"
+            artist_playlist_uri_2 = "spotify:"
+            artist_playlist_name_1 = "N/A"
+            artist_playlist_name_2 = "N/A"
 
-            artist_name = artist['name']
+            artist_name = artist["name"]
             search_param = artist_name.lower()
             pl1 = "This Is " + artist_name
             pl2 = artist_name + " Radio"
@@ -200,31 +207,31 @@ class SpotifyTopArtists(RestoreEntity):
                 20,
                 0,
                 "playlist",
-                self._user_country
-                )
+                self._user_country,
+            )
 
-            if srch['playlists']['items'] is not None:
-                for p_list in srch['playlists']['items']:
-                    if p_list.get('owner', {}).get('id', '') == 'spotify':
-                        if p_list['name'] == pl1:
-                            artist_playlist_uri_1 = p_list['uri']
-                            artist_playlist_name_1 = p_list['name']
-                        elif p_list['name'] == pl2:
-                            artist_playlist_uri_2 = p_list['uri']
-                            artist_playlist_name_2 = p_list['name']
+            if srch["playlists"]["items"] is not None:
+                for p_list in srch["playlists"]["items"]:
+                    if p_list.get("owner", {}).get("id", "") == "spotify":
+                        if p_list["name"] == pl1:
+                            artist_playlist_uri_1 = p_list["uri"]
+                            artist_playlist_name_1 = p_list["name"]
+                        elif p_list["name"] == pl2:
+                            artist_playlist_uri_2 = p_list["uri"]
+                            artist_playlist_name_2 = p_list["name"]
 
             return {
-                'name': artist['name'],
-                'uri': artist['uri'],
-                'image': artist['images'][0]['url'],
-                'artist_playlist_name': artist_playlist_name_1,
-                'artist_playlist': artist_playlist_uri_1,
-                'artist_radio_name': artist_playlist_name_2,
-                'artist_radio': artist_playlist_uri_2,
+                "name": artist["name"],
+                "uri": artist["uri"],
+                "image": artist["images"][0]["url"],
+                "artist_playlist_name": artist_playlist_name_1,
+                "artist_playlist": artist_playlist_uri_1,
+                "artist_radio_name": artist_playlist_name_2,
+                "artist_radio": artist_playlist_uri_2,
             }
 
     async def spotify_top_artists(self, call):
-        """ Gather 'Top Artists' and get details."""
+        """Gather 'Top Artists' and get details."""
         artist_items = []
         artists = []
 
@@ -232,16 +239,12 @@ class SpotifyTopArtists(RestoreEntity):
         ## to return 50 artists, but if you set the offset to 49
         ## and request the max limit of 50, you can get 99 artists
         my_artists = await self.hass.async_add_executor_job(
-            self.data.client.current_user_top_artists,
-            49,
-            0
-            )
+            self.data.client.current_user_top_artists, 49, 0
+        )
         my_artists2 = await self.hass.async_add_executor_job(
-            self.data.client.current_user_top_artists,
-            50,
-            49
-            )
-        artist_items = my_artists['items'] + my_artists2['items']
+            self.data.client.current_user_top_artists, 50, 49
+        )
+        artist_items = my_artists["items"] + my_artists2["items"]
 
         semaphore = asyncio.Semaphore(8)
         tasks = []
@@ -249,7 +252,7 @@ class SpotifyTopArtists(RestoreEntity):
             tasks.append(self.search_playlists_async(semaphore, artist))
         artist_results = await asyncio.gather(*tasks)
 
-        artists = sorted(artist_results, key=lambda x: x['name'].replace("The ", ""))
+        artists = sorted(artist_results, key=lambda x: x["name"].replace("The ", ""))
         _LOGGER.debug("Top Artists retrieved and sorted")
 
         self._state = f"{len(artists)} Artists"

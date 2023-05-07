@@ -4,7 +4,7 @@ import logging
 from homeassistant.components.media_player import MediaType
 
 DOMAIN = "spotify_plus"
-MUSIC_REC_TOLERANCE = .20
+MUSIC_REC_TOLERANCE = 0.20
 MUSIC_REC_TRACK_COUNT = 100
 MUSIC_PLAYLIST_DESC = "Created by Spotify+ Tools for Home Assistant"
 

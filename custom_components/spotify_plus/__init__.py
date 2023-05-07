@@ -25,6 +25,7 @@ from .const import DOMAIN, _LOGGER, SPOTIFY_SCOPES
 CONFIG_SCHEMA = cv.removed(DOMAIN, raise_if_present=False)
 PLATFORMS = [Platform.SENSOR, Platform.MEDIA_PLAYER]
 
+
 @dataclass
 class HomeAssistantSpotifyData:
     """Spotify data stored in the Home Assistant data object."""
@@ -34,9 +35,11 @@ class HomeAssistantSpotifyData:
     devices: DataUpdateCoordinator[list[dict[str, Any]]]
     session: OAuth2Session
 
+
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the Spotify integration."""
     return True
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Spotify from a config entry."""
@@ -101,6 +104,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
+
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload Spotify config entry."""

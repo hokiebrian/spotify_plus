@@ -11,30 +11,6 @@ from . import HomeAssistantSpotifyData
 from .const import DOMAIN, _LOGGER, SPOTIFY_SCOPES, MM_API
 
 
-def spotify_exception_handler(func):
-    """Decorate Spotify calls to handle Spotify exception.
-
-    A decorator that wraps the passed in function, catches Spotify errors,
-    aiohttp exceptions and handles the availability of the media player.
-    """
-
-    def wrapper(self, *args, **kwargs):
-        # pylint: disable=protected-access
-        try:
-            result = func(self, *args, **kwargs)
-            self._attr_available = True
-            return result
-        except requests.RequestException:
-            self._attr_available = False
-        except SpotifyException as exc:
-            self._attr_available = False
-            if exc.reason == "NO_ACTIVE_DEVICE":
-                raise HomeAssistantError("No active playback device found") from None
-            raise HomeAssistantError(f"Spotify error: {exc.reason}") from exc
-
-    return wrapper
-
-
 class SpotifySongData(RestoreEntity):
     """Representation of a Spotify controller."""
 
@@ -337,7 +313,6 @@ class SpotifySongData(RestoreEntity):
             }
         self.async_write_ha_state()
 
-    @spotify_exception_handler
     async def spotify_manage_artist(self, call):
         """Add Artist to Spotify Library"""
         if "artist_id" in call.data and call.data["artist_id"]:
@@ -352,7 +327,6 @@ class SpotifySongData(RestoreEntity):
                 )
                 _LOGGER.debug("Spotify Artist %s Added", self._current_artist_id)
 
-    @spotify_exception_handler
     async def spotify_manage_album(self, call):
         """Add Album to Spotify Library"""
         if "album_id" in call.data and call.data["album_id"]:
@@ -368,7 +342,6 @@ class SpotifySongData(RestoreEntity):
                 )
                 _LOGGER.debug("Spotify Album %s Added", self._current_album_id)
 
-    @spotify_exception_handler
     async def spotify_manage_track(self, call):
         """Add Track to Spotify Library"""
         if "track_id" in call.data and call.data["track_id"]:
@@ -384,7 +357,6 @@ class SpotifySongData(RestoreEntity):
                 )
                 _LOGGER.debug("Spotify Track %s Added", self._current_track_uri)
 
-    @spotify_exception_handler
     async def spotify_manage_playlist(self, call):
         """Add Playlist to Spotify Library"""
         if "playlist_id" in call.data and call.data["playlist_id"]:

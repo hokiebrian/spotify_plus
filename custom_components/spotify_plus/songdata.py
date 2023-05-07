@@ -133,7 +133,6 @@ class SpotifySongData(RestoreEntity):
         """Return the state attributes of the sensor."""
         return self._extra_attributes
 
-    @spotify_exception_handler
     async def get_song_data(self, call):
         """Update the sensor."""
         retry = True

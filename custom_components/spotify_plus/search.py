@@ -7,6 +7,30 @@ from . import HomeAssistantSpotifyData
 from .const import DOMAIN, _LOGGER
 
 
+def spotify_exception_handler(func):
+    """Decorate Spotify calls to handle Spotify exception.
+
+    A decorator that wraps the passed in function, catches Spotify errors,
+    aiohttp exceptions and handles the availability of the media player.
+    """
+
+    def wrapper(self, *args, **kwargs):
+        # pylint: disable=protected-access
+        try:
+            result = func(self, *args, **kwargs)
+            self._attr_available = True
+            return result
+        except requests.RequestException:
+            self._attr_available = False
+        except SpotifyException as exc:
+            self._attr_available = False
+            if exc.reason == "NO_ACTIVE_DEVICE":
+                raise HomeAssistantError("No active playback device found") from None
+            raise HomeAssistantError(f"Spotify error: {exc.reason}") from exc
+
+    return wrapper
+
+
 class SpotifySearch(RestoreEntity):
     """Spotify Search Sensor."""
 
@@ -60,6 +84,7 @@ class SpotifySearch(RestoreEntity):
         """Return the state attributes of the sensor."""
         return self._extra_attributes
 
+    @spotify_exception_handler
     async def spotify_search(self, call):
         """Perform search and divide up search results."""
 

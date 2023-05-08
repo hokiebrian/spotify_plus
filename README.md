@@ -34,7 +34,7 @@ If the optional data is left blank, those features will not be called upon. You 
 This provides an enhanced experience for Spotify in your Home Assistant instance.
 
 ### Who is this for?
-This platform is for Home Assistant users that want to leverage Home Assistant to be deeply integrated with their Spotify listening. Out of the box, it is a Spotify Media Player. What you do with it beyond that is entirely up to you. A tremendous amount of Spotify data is accessible through these services and some fun and exciting cards, automations, scripts and interfaces can be built on top of this data. 
+This platform is for Home Assistant users that want to leverage Home Assistant to be deeply integrated with their Spotify listening and want to be more adventurous in their music listening. Out of the box, it is a Spotify Media Player. What you do with it beyond that is entirely up to you. A tremendous amount of Spotify data is accessible through these services and some fun and exciting cards, automations, scripts and interfaces can be built on top of this data. 
 
 ### What is does?
 - Provides a playlist and queue creation utility that is highly customizable
@@ -148,9 +148,10 @@ Search Spotify... with a twist! There are two search methods, `Artist Profile` a
 ***
 ## Troubleshooting:
 * What's up with these recorder errors saying the attribute fields are too large? It is recommended to exclude an entity_glob from the recorder (exclude sensor.spotify_*). The secondary sensors that have large amounts of attribute data will survive a reboot, even if they are excluded from the recorder.
-* I get "No Active Device" errors and nothing plays? This is a Spotify limitation. If the backend player has a state of Idle, you cannot pass a play command without passing a device_id along with it. Keep this in mind when calling services that use the service to trigger play events. The other option is to simply call media_player.select_source and activate the player. You'll see the status of the player go from 'idle' to 'paused'. You can always check this in your script or automation conditions.
+* I get "No Active Device" errors and nothing plays? This is a Spotify limitation. If the backend player has a state of Idle, you cannot pass a play command without passing a device_id along with it. Keep this in mind when calling services that use the service to trigger play events. You can pass the *NAME* of the device, the code handles the device_id lookup. The other option is to simply call media_player.select_source and activate the player. You'll see the status of the player go from 'idle' to 'paused'. You can always check this in your script or automation conditions.
 * My playlists have almost no tracks - your parameters are too off balance, play with the values.
 * Where is Tempo? Why can't I enter that? Tempo is a highly deceptive metric assigned by Spotify. It is all but guaranteed you'll be frustrated. I tried many different ways to make this work, but the metric just isn't a reliable one. I'd recommend using some other parameters, such as Dancability, to tweak your tracks.
 ***
 ## Other Info:
 * The Spotify API is typically very responsive and has few issues. There is always the random disconnect and other odd behaviors. This platform hits the API every 3 seconds with a light request and has proven reliable at that frequency. It was tested with a 1 second update interval and it worked great - but 86,400 requests per day seemed excessive, so it's 28,800.
+* Please provide feedback and suggestions!

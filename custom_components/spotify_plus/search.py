@@ -84,7 +84,6 @@ class SpotifySearch(RestoreEntity):
         """Return the state attributes of the sensor."""
         return self._extra_attributes
 
-    @spotify_exception_handler
     async def spotify_search(self, call):
         """Perform search and divide up search results."""
 

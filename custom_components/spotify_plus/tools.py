@@ -76,7 +76,7 @@ class SpotifyMusicMachine(RestoreEntity):
     async def spotify_music_machine(self, call):
         """Build New Set of Songs(Tracks)"""
         try:
-            MIN_MAX_TOLERANCE = call.data["tolerance"] / 100
+            MIN_MAX_TOLERANCE = float(call.data["tolerance"]) / 100
         except KeyError:
             MIN_MAX_TOLERANCE = self._tolerance
         playlist_name = call.data["name"]

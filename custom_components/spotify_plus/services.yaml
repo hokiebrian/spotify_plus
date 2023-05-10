@@ -265,3 +265,27 @@ spotify_music_machine:
             max: 50
             step: 1
             mode: box
+      seed_artists:
+        name: Seed Artists
+        description: "LIST of seed artists"
+        example: ABC123
+        required: false
+        default: "ABC123"
+        selector: 
+          text:
+      seed_albums:
+        name: Seed Albums
+        description: "LIST of seed albums"
+        example: ABC123
+        required: false
+        default: "ABC123"
+        selector: 
+          text:
+      seed_tracks:
+        name: Seed Tracks
+        description: "LIST of seed tracks"
+        example: ABC123
+        required: false
+        default: "ABC123"
+        selector: 
+          text:

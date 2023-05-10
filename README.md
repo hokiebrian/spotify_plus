@@ -54,7 +54,7 @@ Usage:
 - All of the services are available to be called from the Home Assistant Frontend or via Automations and Scripts
 - As a suggestion, add an automation that triggers when the Player attribute `media_content_id` changes and call the `get_song_data` and `extras` services
 - Set your artists and playlists to refresh at whatever interval you choose. They do not poll at all unless called upon, but the data will survive restarts. 
-- Use auto-entities or Markdown cards to generate cards for your artists, playlists, search results, queue, recent items, etc. (Examples to be provided at a future date)
+- Use auto-entities or Markdown cards to generate cards for your artists, playlists, search results, queue, recent items, etc.
 - Use Song Info to visualize current track parameters (Energy, Valence, etc.)
 - See [EXAMPLES](/examples.md) for interface examples
 
@@ -68,12 +68,16 @@ Usage:
 ### Services (and how to use them):
 
 ### Service: `spotify_plus.spotify_music_machine`
-This service does the fun stuff. Select values for a playlist or queue of songs. All settings are optional. The service will leverage a selected set of artists (either your Top Artists - up to the top 100 - or the collective of your followed artists. Top Artists time range can be selected (1m, 6m, 1y+). Based on that info, a random selection of 10 artists will be selected as seeds for your playlist / queue, along with the song feature parameters you select. You can dump the recommendations to a playlist or have the selection be ephemeral and just get dropped into your queue. You can play immediately, or just create a playlist to consume later. 
+This service does the fun stuff. Select values for a playlist or queue of songs. All settings are optional. 
+
+Artist Driven:
+The service will leverage a selected set of artists (either your Top Artists - up to the top 100 - or the collective of your followed artists. Top Artists time range can be selected (1m, 6m, 1y+). Based on that info, a random selection of 10 artists will be selected as seeds for your playlist / queue, along with the song feature parameters you select. You can dump the recommendations to a playlist or have the selection be ephemeral and just get dropped into your queue. You can play immediately, or just create a playlist to consume later. 
 
 The track parameters you enter are passed to Spotify with a default range of +/- 20% around the entered values. If your value is 50%, the submitted ranged will be .30 - .70. The exceptions are hard pinned values for a few options, such as energy. If you pin energy to 100, the range will only br 90-100 instead of 80-100. If you simply drop it to 99, the range will be 79-100. This helps to get you a set of songs that really meet your needs if you want to go extreme on a setting. 
 
 If the pre-filtered recommended track list is small (<50), the service will perform an additional query for tracks based on your Top 50 tracks in an effort to boost the playlist size. 
 
+Manual Submission:
 The other way to use this service is to create playlist or queues based on specific artist(s), genre(s) or track(s). Passing a comma-separated list of seed_artists/genres/tracks IDs will override the library or top artist inputs. You can use any combination of the three seed values, but the TOTAL quantity cannot exceed 5. You should check this on the frontend prior to sending the seed values. There is not any logic to detect if too many values have been passed. The available seed genres are an attribute of `sensor.spotify_plus`. These are the only genres that can be passed. They do not match the genres that are assigned to albums or artists. I don't get it either.
 
 The best way to consume this service is to try it out. It is very responsive and you'll get a 100 track playlist very quickly. 
@@ -83,6 +87,7 @@ The best way to consume this service is to try it out. It is very responsive and
 #### TIP: Use scenes to preset the values of Valence, Energy, etc. and provide one-click create and play of predefined parameters. "I want some peaceful music now" - one click, music plays. 
 #### TIP: Create input_number helpers to align with the service parameters. Use a script to sync the current values from a playing track. 
 #### TIP: Use the optional parameter in the service 'Recommendation Tolerance' to tweak the breadth of the parameters. The default is +/- 20%. Making this much smaller than that will limit the number of tracks returned.
+#### TIP: Have a tap_action to call the service with the spotify_track_id (optionally with feature parameters) to get a quick queue or playlist of similar songs to the current one
 
 #### Sensor: `sensor.spotify_music_machine` - this sensor and the attributes capture the parameters used in the recommendations query and the results. 
 

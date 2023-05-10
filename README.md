@@ -74,7 +74,7 @@ The track parameters you enter are passed to Spotify with a default range of +/-
 
 If the pre-filtered recommended track list is small (<50), the service will perform an additional query for tracks based on your Top 50 tracks in an effort to boost the playlist size. 
 
-The other way to use this service is to create playlist or queues based on specific artist(s), album(s) or track(s). Passing a comma-separated list of seed_artists/albums/tracks IDs will override the library or top artist inputs. You can use any combination of the three seed values, but the TOTAL quantity cannot exceed 5. You should check this on the frontend prior to sending the seed values. There is not any logic to detect if too many values have been passed.
+The other way to use this service is to create playlist or queues based on specific artist(s), genre(s) or track(s). Passing a comma-separated list of seed_artists/genres/tracks IDs will override the library or top artist inputs. You can use any combination of the three seed values, but the TOTAL quantity cannot exceed 5. You should check this on the frontend prior to sending the seed values. There is not any logic to detect if too many values have been passed. The available seed genres are an attribute of `sensor.spotify_plus`. These are the only genres that can be passed. They do not match the genres that are assigned to albums or artists. I don't get it either.
 
 The best way to consume this service is to try it out. It is very responsive and you'll get a 100 track playlist very quickly. 
 

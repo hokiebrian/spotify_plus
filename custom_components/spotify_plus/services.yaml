@@ -193,15 +193,15 @@ spotify_music_machine:
         name: Playlist Name
         description: "The name of the playlist, ignored if 'Create Playlist' not selected"
         example: My Playlist
-        required: true
-        default: "My Playlist"
+        required: false
+        default: "Spotify Plus"
         selector: 
           text:
       count:
         name: Artist Count
         description: "The number of Top Artists considered. Max 100, ignored if My Artists used"
         example: 100
-        required: true
+        required: false
         default: 100
         selector: 
           number:
@@ -215,7 +215,7 @@ spotify_music_machine:
         example: true
         selector:
           boolean:
-        required: true
+        required: false
       time_range:
         name: Top Artists Time Range
         description: "short_term, medium_term, long_term"
@@ -230,21 +230,21 @@ spotify_music_machine:
                 value: "medium_term"
               - label: Long Term (Years)
                 value: "long_term"
-        required: true
+        required: false
       create_playlist:
         name: Create Playlist
         description: "Enable to enshrine selection as a playlist"
         example: true
         selector:
           boolean:
-        required: true
+        required: false
       play_now:
         name: Play Upon Creation
         description: "Play the new playlist or queue on the active device"
         example: false
         selector:
           boolean:
-        required: true
+        required: false
       device_name:
         name: Device Name
         description: "The name (not ID) of the device to play on. If blank, current device will be used."

@@ -79,12 +79,13 @@ class SpotifyMusicMachine(RestoreEntity):
             MIN_MAX_TOLERANCE = float(call.data["tolerance"]) / 100
         except KeyError:
             MIN_MAX_TOLERANCE = self._tolerance
-        playlist_name = call.data["name"]
-        artist_count = int(float(call.data["count"]))
-        artist_focus = call.data["focus"]
-        time_range = call.data["time_range"]
-        play_now = call.data["play_now"]
-        create_playlist = call.data["create_playlist"]
+        playlist_name = call.data.get("name", "Spotify Plus")
+        artist_count = int(float(call.data.get("count", 100)))
+        artist_focus = call.data.get("focus", False)
+        time_range = call.data.get("time_range", "long_term")
+        play_now = call.data.get("play_now", False)
+        create_playlist = call.data.get("create_playlist", True)
+
         existing_pl_flag = False
         playlist_desc = self._playlist_desc
         context_playlist = "Queue Only"
@@ -101,16 +102,13 @@ class SpotifyMusicMachine(RestoreEntity):
             "country": self._user_country,
         }
 
-        try:
-            device_name = call.data["device_name"]
+        device_name = call.data.get("device_name", None)
+        if device_name:
             for device in self.data.devices.data:
                 if device["name"] == device_name:
                     self.hass.async_add_executor_job(
                         self.data.client.transfer_playback, device["id"]
                     )
-        except KeyError:
-            device_name = None
-
         try:
             SEED_ARTISTS = call.data["seed_artists"].replace(" ", "").split(",")
         except (TypeError, ValueError, KeyError):
@@ -126,24 +124,27 @@ class SpotifyMusicMachine(RestoreEntity):
         except (TypeError, ValueError, KeyError):
             SEED_TRACKS = []
 
-        try:
-            TARGET_VALENCE = float(call.data["valence"]) / 100
+        TARGET_VALENCE = call.data.get("valence", None)
+        if TARGET_VALENCE is not None:
+            TARGET_VALENCE = float(TARGET_VALENCE) / 100
             TARGET_VALENCE_MIN = round(max(TARGET_VALENCE - MIN_MAX_TOLERANCE, 0), 2)
             TARGET_VALENCE_MAX = round(min(TARGET_VALENCE + MIN_MAX_TOLERANCE, 1.0), 2)
-        except (TypeError, ValueError, KeyError):
-            TARGET_VALENCE = None
+            params["min_valence"] = TARGET_VALENCE_MIN
+            params["max_valence"] = TARGET_VALENCE_MAX
 
-        try:
-            TARGET_ENERGY = float(call.data["energy"]) / 100
+        TARGET_ENERGY = call.data.get("energy", None)
+        if TARGET_ENERGY is not None:
+            TARGET_ENERGY = float(TARGET_ENERGY) / 100
             TARGET_ENERGY_MIN = round(max(TARGET_ENERGY - MIN_MAX_TOLERANCE, 0), 2)
             TARGET_ENERGY_MAX = round(min(TARGET_ENERGY + MIN_MAX_TOLERANCE, 1.0), 2)
             if TARGET_ENERGY == 1:
                 TARGET_ENERGY_MIN = 0.90
-        except (TypeError, ValueError, KeyError):
-            TARGET_ENERGY = None
+            params["min_energy"] = TARGET_ENERGY_MIN
+            params["max_energy"] = TARGET_ENERGY_MAX
 
-        try:
-            TARGET_ACOUSTIC = float(call.data["acousticness"]) / 100
+        TARGET_ACOUSTIC = call.data.get("acousticness", None)
+        if TARGET_ACOUSTIC is not None:
+            TARGET_ACOUSTIC = float(TARGET_ACOUSTIC) / 100
             TARGET_ACOUSTIC_MIN = round(max(TARGET_ACOUSTIC - MIN_MAX_TOLERANCE, 0), 2)
             TARGET_ACOUSTIC_MAX = round(
                 min(TARGET_ACOUSTIC + MIN_MAX_TOLERANCE, 1.0), 2
@@ -153,79 +154,58 @@ class SpotifyMusicMachine(RestoreEntity):
                 TARGET_ACOUSTIC_MAX = 0.10
             if 0.10 <= TARGET_ACOUSTIC <= 0.20:
                 TARGET_ACOUSTIC_MIN = 0.01
-        except (TypeError, ValueError, KeyError):
-            TARGET_ACOUSTIC = None
+            params["min_acousticness"] = TARGET_ACOUSTIC_MIN
+            params["max_acousticness"] = TARGET_ACOUSTIC_MAX
 
-        try:
-            TARGET_DANCE = float(call.data["danceability"]) / 100
+        TARGET_DANCE = call.data.get("danceability", None)
+        if TARGET_DANCE is not None:
+            TARGET_DANCE = float(TARGET_DANCE) / 100
             TARGET_DANCE_MIN = round(max(TARGET_DANCE - MIN_MAX_TOLERANCE, 0), 2)
             TARGET_DANCE_MAX = round(min(TARGET_DANCE + MIN_MAX_TOLERANCE, 1.0), 2)
-        except (TypeError, ValueError, KeyError):
-            TARGET_DANCE = None
+            params["min_danceability"] = TARGET_DANCE_MIN
+            params["max_danceability"] = TARGET_DANCE_MAX
 
-        try:
-            TARGET_INSTRUMENTAL = float(call.data["instrumentalness"]) / 100
+        TARGET_INSTRUMENTAL = call.data.get("instrumentalness", None)
+        if TARGET_INSTRUMENTAL is not None:
+            TARGET_INSTRUMENTAL = float(TARGET_INSTRUMENTAL) / 100
             TARGET_INSTRUMENTAL_MIN = round(
                 max(TARGET_INSTRUMENTAL - MIN_MAX_TOLERANCE, 0), 2
             )
             TARGET_INSTRUMENTAL_MAX = round(
                 min(TARGET_INSTRUMENTAL + MIN_MAX_TOLERANCE, 1.0), 2
             )
-        except (TypeError, ValueError, KeyError):
-            TARGET_INSTRUMENTAL = None
+            params["min_instrumentalness"] = TARGET_INSTRUMENTAL_MIN
+            params["max_instrumentalness"] = TARGET_INSTRUMENTAL_MAX
 
-        try:
-            TARGET_LIVENESS = float(call.data["liveness"]) / 100
+        TARGET_LIVENESS = call.data.get("liveness", None)
+        if TARGET_LIVENESS is not None:
+            TARGET_LIVENESS = float(TARGET_LIVENESS) / 100
             TARGET_LIVENESS_MIN = round(max(TARGET_LIVENESS - MIN_MAX_TOLERANCE, 0), 2)
             TARGET_LIVENESS_MAX = round(
                 min(TARGET_LIVENESS + MIN_MAX_TOLERANCE, 1.0), 2
             )
-        except (TypeError, ValueError, KeyError):
-            TARGET_LIVENESS = None
+            params["min_liveness"] = TARGET_LIVENESS_MIN
+            params["max_liveness"] = TARGET_LIVENESS_MAX
 
-        try:
-            TARGET_SPEECHINESS = float(call.data["speechiness"]) / 100
+        TARGET_SPEECHINESS = call.data.get("speechiness", None)
+        if TARGET_SPEECHINESS is not None:
+            TARGET_SPEECHINESS = float(TARGET_SPEECHINESS) / 100
             TARGET_SPEECHINESS_MIN = round(
                 max(TARGET_SPEECHINESS - MIN_MAX_TOLERANCE, 0), 2
             )
             TARGET_SPEECHINESS_MAX = round(
                 min(TARGET_SPEECHINESS + MIN_MAX_TOLERANCE, 1.0), 2
             )
-        except (TypeError, ValueError, KeyError):
-            TARGET_SPEECHINESS = None
-
-        try:
-            TARGET_POP = int(float(call.data["popularity"]))
-            TARGET_POP_MIN = int(max(TARGET_POP - (MIN_MAX_TOLERANCE * 100), 0))
-            TARGET_POP_MAX = int(min(TARGET_POP + (MIN_MAX_TOLERANCE * 100), 100))
-        except (TypeError, ValueError, KeyError):
-            TARGET_POP = None
-
-        ## Make fields optional
-        if TARGET_VALENCE is not None:
-            params["min_valence"] = TARGET_VALENCE_MIN
-            params["max_valence"] = TARGET_VALENCE_MAX
-        if TARGET_ENERGY is not None:
-            params["min_energy"] = TARGET_ENERGY_MIN
-            params["max_energy"] = TARGET_ENERGY_MAX
-        if TARGET_ACOUSTIC is not None:
-            params["min_acousticness"] = TARGET_ACOUSTIC_MIN
-            params["max_acousticness"] = TARGET_ACOUSTIC_MAX
-        if TARGET_DANCE is not None:
-            params["min_danceability"] = TARGET_DANCE_MIN
-            params["max_danceability"] = TARGET_DANCE_MAX
-        if TARGET_POP is not None:
-            params["min_popularity"] = TARGET_POP_MIN
-            params["max_popularity"] = TARGET_POP_MAX
-        if TARGET_INSTRUMENTAL is not None:
-            params["min_instrumentalness"] = TARGET_INSTRUMENTAL_MIN
-            params["max_instrumentalness"] = TARGET_INSTRUMENTAL_MAX
-        if TARGET_LIVENESS is not None:
-            params["min_liveness"] = TARGET_LIVENESS_MIN
-            params["max_liveness"] = TARGET_LIVENESS_MAX
-        if TARGET_SPEECHINESS is not None:
             params["min_speechinness"] = TARGET_SPEECHINESS_MIN
             params["max_speechiness"] = TARGET_SPEECHINESS_MAX
+
+        TARGET_POP = call.data.get("popularity", None)
+        if TARGET_POP is not None:
+            TARGET_POP = int(float(TARGET_POP))
+            TARGET_POP_MIN = int(max(TARGET_POP - (MIN_MAX_TOLERANCE * 100), 0))
+            TARGET_POP_MAX = int(min(TARGET_POP + (MIN_MAX_TOLERANCE * 100), 100))
+            params["min_popularity"] = TARGET_POP_MIN
+            params["max_popularity"] = TARGET_POP_MAX
 
         playlists = await self.hass.async_add_executor_job(
             self.data.client.current_user_playlists

@@ -210,24 +210,26 @@ class SpotifyMusicMachine(RestoreEntity):
         playlists = await self.hass.async_add_executor_job(
             self.data.client.current_user_playlists
         )
-        for playlist in playlists["items"]:
-            if playlist["name"] == playlist_name:
-                existing_pl_flag = True
-                existing_playlist_uri = playlist["uri"]
-                existing_playlist_items = await self.hass.async_add_executor_job(
-                    self.data.client.playlist_items,
-                    existing_playlist_uri,
-                    "items(track(uri))",
-                    100,
-                )
-                existing_playlist_item_uris = [
-                    item["track"]["uri"] for item in existing_playlist_items["items"]
-                ]
-                await self.hass.async_add_executor_job(
-                    self.data.client.playlist_remove_all_occurrences_of_items,
-                    existing_playlist_uri,
-                    existing_playlist_item_uris,
-                )
+
+        if create_playlist:
+            for playlist in playlists["items"]:
+                if playlist["name"] == playlist_name:
+                    existing_pl_flag = True
+                    existing_playlist_uri = playlist["uri"]
+                    existing_playlist_items = await self.hass.async_add_executor_job(
+                        self.data.client.playlist_items,
+                        existing_playlist_uri,
+                        "items(track(uri))",
+                        100,
+                    )
+                    existing_playlist_item_uris = [
+                        item["track"]["uri"] for item in existing_playlist_items["items"]
+                    ]
+                    await self.hass.async_add_executor_job(
+                        self.data.client.playlist_remove_all_occurrences_of_items,
+                        existing_playlist_uri,
+                        existing_playlist_item_uris,
+                    )
 
         if not (SEED_ARTISTS or SEED_GENRES or SEED_TRACKS):
             ## This is a hack to get beyond 50 Top Tracks to 99

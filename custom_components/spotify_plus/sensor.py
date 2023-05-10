@@ -230,6 +230,9 @@ class SpotifyPlus(SensorEntity):
         spotify_playlist_number_task = self.hass.async_add_executor_job(
             self.data.client.current_user_playlists, 1
         )
+        spotify_seed_genres_task = self.hass.async_add_executor_job(
+            self.data.client.recommendation_genre_seeds
+        )
 
         (
             spotify_me,
@@ -237,12 +240,14 @@ class SpotifyPlus(SensorEntity):
             spotify_track_number,
             spotify_album_number,
             spotify_playlist_number,
+            spotify_seed_genres,
         ) = await asyncio.gather(
             spotify_me_task,
             spotify_artist_number_task,
             spotify_track_number_task,
             spotify_album_number_task,
             spotify_playlist_number_task,
+            spotify_seed_genres_task,
         )
 
         _LOGGER.debug("Spotify Calls Completed")
@@ -266,4 +271,5 @@ class SpotifyPlus(SensorEntity):
             "profile_image": self._profile_image,
             "product": self._product,
             "devices": devices,
+            "seed_genres": list(spotify_seed_genres["genres"]),
         }

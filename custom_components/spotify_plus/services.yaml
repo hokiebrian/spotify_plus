@@ -267,25 +267,23 @@ spotify_music_machine:
             mode: box
       seed_artists:
         name: Seed Artists
-        description: "LIST of seed artists"
-        example: ABC123
+        description: "List of seed artists"
+        example: 5BcZ22XONcRoLhTbZRuME1
         required: false
-        default: "ABC123"
         selector: 
           text:
-      seed_albums:
-        name: Seed Albums
-        description: "LIST of seed albums"
-        example: ABC123
+      seed_genres:
+        name: Seed Genres
+        description: "List of seed genres"
+        example: alternative
         required: false
-        default: "ABC123"
         selector: 
           text:
       seed_tracks:
         name: Seed Tracks
-        description: "LIST of seed tracks"
-        example: ABC123
+        description: "List of seed tracks"
+        example: 4Q27I5G3W14hnYVi45oi2h
         required: false
-        default: "ABC123"
         selector: 
           text:
+

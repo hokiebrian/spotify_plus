@@ -117,9 +117,9 @@ class SpotifyMusicMachine(RestoreEntity):
             SEED_ARTISTS = []
 
         try:
-            SEED_ALBUMS = call.data["seed_albums"].replace(" ", "").split(",")
+            SEED_GENRES = call.data["seed_genres"].replace(" ", "").split(",")
         except (TypeError, ValueError, KeyError):
-            SEED_ALBUMS = []
+            SEED_GENRES = []
 
         try:
             SEED_TRACKS = call.data["seed_tracks"].replace(" ", "").split(",")
@@ -249,7 +249,7 @@ class SpotifyMusicMachine(RestoreEntity):
                     existing_playlist_item_uris,
                 )
 
-        if not (SEED_ARTISTS or SEED_ALBUMS or SEED_TRACKS):
+        if not (SEED_ARTISTS or SEED_GENRES or SEED_TRACKS):
             ## This is a hack to get beyond 50 Top Tracks to 99
             resultst1_task = self.hass.async_add_executor_job(
                 self.data.client.current_user_top_tracks, 49, 0, time_range
@@ -374,12 +374,9 @@ class SpotifyMusicMachine(RestoreEntity):
                     artist["name"] for artist in artists_info["artists"]
                 ]
 
-            if len(SEED_ALBUMS) > 0:
-                paramsx["seed_albums"] = SEED_ALBUMS
-                albums_info = await self.hass.async_add_executor_job(
-                    self.data.client.albums, SEED_ALBUMS
-                )
-                random_album_names = [album["name"] for album in albums_info["albums"]]
+            if len(SEED_GENRES) > 0:
+                paramsx["seed_genres"] = SEED_GENRES
+                unique_genre = SEED_GENRES
 
             if len(SEED_TRACKS) > 0:
                 paramsx["seed_tracks"] = SEED_TRACKS

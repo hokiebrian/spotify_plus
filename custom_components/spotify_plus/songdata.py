@@ -53,9 +53,12 @@ class SpotifySongData(RestoreEntity):
         self._mm_api_token = mm_api_token or None
         self._current_artist_name = None
         self._current_artist_id = None
+        self._current_artist_uri = None
         self._current_album_id = None
+        self._current_album_uri = None
         self._current_album_img = {}
         self._current_track_name = None
+        self._current_track_id = None
         self._current_track_uri = None
         self._current_album_name = None
         self._current_track_isrc = None
@@ -131,9 +134,12 @@ class SpotifySongData(RestoreEntity):
             self._state = current_playback["item"]["name"]
             self._current_artist_name = current_playback["item"]["artists"][0]["name"]
             self._current_artist_id = current_playback["item"]["artists"][0]["id"]
+            self._current_artist_uri = current_playback["item"]["artists"][0]["uri"]
             self._current_album_id = current_playback["item"]["album"]["id"]
+            self._current_album_uri = current_playback["item"]["album"]["uri"]
             self._current_album_img = current_playback["item"]["album"]["images"]
             self._current_track_name = current_playback["item"]["name"]
+            self._current_track_id = current_playback["item"]["id"]
             self._current_track_uri = current_playback["item"]["uri"]
             self._current_album_name = current_playback["item"]["album"]["name"]
             self._current_track_isrc = current_playback["item"]["external_ids"][
@@ -267,10 +273,13 @@ class SpotifySongData(RestoreEntity):
 
             self._extra_attributes = {
                 "spotify": {
+                    "spotify_track_id": self._current_track_id,
                     "spotify_track_uri": self._current_track_uri,
                     "spotify_artist_name": self._current_artist_name,
                     "spotify_artist_id": self._current_artist_id,
+                    "spotify_artist_uri": self._current_artist_uri,
                     "spotify_album_id": self._current_album_id,
+                    "spotify_album_uri": self._current_album_uri,
                     "spotify_album_img": self._current_album_img,
                     "spotify_track_name": self._current_track_name,
                     "spotify_track_length": self._track_length,

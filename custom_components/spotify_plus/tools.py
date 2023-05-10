@@ -223,7 +223,8 @@ class SpotifyMusicMachine(RestoreEntity):
                         100,
                     )
                     existing_playlist_item_uris = [
-                        item["track"]["uri"] for item in existing_playlist_items["items"]
+                        item["track"]["uri"]
+                        for item in existing_playlist_items["items"]
                     ]
                     await self.hass.async_add_executor_job(
                         self.data.client.playlist_remove_all_occurrences_of_items,

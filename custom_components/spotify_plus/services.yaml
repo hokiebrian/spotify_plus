@@ -272,13 +272,6 @@ spotify_music_machine:
         required: false
         selector: 
           text:
-      seed_genres:
-        name: Seed Genres
-        description: "List of seed genres"
-        example: alternative
-        required: false
-        selector: 
-          text:
       seed_tracks:
         name: Seed Tracks
         description: "List of seed tracks"
@@ -286,4 +279,10 @@ spotify_music_machine:
         required: false
         selector: 
           text:
-
+      seed_genres:
+        name: Seed Genres
+        description: "List of seed genres"
+        example: alternative
+        required: false
+        selector: 
+          text:

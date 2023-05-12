@@ -114,6 +114,10 @@ class SpotifySongData(RestoreEntity):
             "spotify_manage_album": self.spotify_manage_album,
             "spotify_manage_track": self.spotify_manage_track,
             "spotify_manage_playlist": self.spotify_manage_playlist,
+            "spotify_unfollow_artist": self.spotify_unfollow_artist,
+            "spotify_unfollow_album": self.spotify_unfollow_album,
+            "spotify_unfollow_track": self.spotify_unfollow_track,
+            "spotify_unfollow_playlist": self.spotify_unfollow_playlist,
         }
         for service_name, service_func in service_options.items():
             self.hass.services.async_register(DOMAIN, service_name, service_func)
@@ -411,3 +415,66 @@ class SpotifySongData(RestoreEntity):
                     self._spotify_context_uri,
                 )
                 _LOGGER.debug("Spotify Playlist %s Added", self._spotify_context_uri)
+
+    @spotify_exception_handler
+    async def spotify_unfollow_artist(self, call):
+        """Add Artist to Spotify Library"""
+        if "artist_id" in call.data and call.data["artist_id"]:
+            await self.hass.async_add_executor_job(
+                self.data.client.user_unfollow_artists, [call.data["artist_id"]]
+            )
+            _LOGGER.debug("Spotify Artist %s Added", call.data["artist_id"])
+        else:
+            if self._current_artist_id:
+                await self.hass.async_add_executor_job(
+                    self.data.client.user_unfollow_artists, [self._current_artist_id]
+                )
+                _LOGGER.debug("Spotify Artist %s Deleted", self._current_artist_id)
+
+    @spotify_exception_handler
+    async def spotify_unfollow_album(self, call):
+        """Add Album to Spotify Library"""
+        if "album_id" in call.data and call.data["album_id"]:
+            await self.hass.async_add_executor_job(
+                self.data.client.current_user_saved_albums_delete, [call.data["album_id"]]
+            )
+            _LOGGER.debug("Spotify Album %s Deleted", call.data["album_id"])
+        else:
+            if self._current_album_id:
+                await self.hass.async_add_executor_job(
+                    self.data.client.current_user_saved_albums_delete,
+                    [self._current_album_id],
+                )
+                _LOGGER.debug("Spotify Album %s Deleted", self._current_album_id)
+
+    @spotify_exception_handler
+    async def spotify_unfollow_track(self, call):
+        """Add Track to Spotify Library"""
+        if "track_id" in call.data and call.data["track_id"]:
+            await self.hass.async_add_executor_job(
+                self.data.client.current_user_saved_tracks_delete, [call.data["track_id"]]
+            )
+            _LOGGER.debug("Spotify Track %s Deleted", call.data["track_id"])
+        else:
+            if self._current_track_uri:
+                await self.hass.async_add_executor_job(
+                    self.data.client.current_user_saved_tracks_delete,
+                    [self._current_track_uri],
+                )
+                _LOGGER.debug("Spotify Track %s Deleted", self._current_track_uri)
+
+    @spotify_exception_handler
+    async def spotify_unfollow_playlist(self, call):
+        """Add Playlist to Spotify Library"""
+        if "playlist_id" in call.data and call.data["playlist_id"]:
+            await self.hass.async_add_executor_job(
+                self.data.client.current_user_unfollow_playlist, call.data["playlist_id"]
+            )
+            _LOGGER.debug("Spotify Playlist %s Deleted", call.data["playlist_id"])
+        else:
+            if self._spotify_context_uri:
+                await self.hass.async_add_executor_job(
+                    self.data.client.current_user_unfollow_playlist,
+                    self._spotify_context_uri,
+                )
+                _LOGGER.debug("Spotify Playlist %s Deleted", self._spotify_context_uri)

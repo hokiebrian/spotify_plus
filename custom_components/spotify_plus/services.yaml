@@ -48,6 +48,50 @@ spotify_manage_playlist:
       required: false
       selector:
         text:
+spotify_unfollow_artist:
+  name: Unfollow Artist in Spotify
+  description: Unfollow Artist in Spotify Library
+  fields:
+    artist_id:
+      name: Artist ID
+      description: ID of Artits to unfollow (adds current artist if blank)
+      example: 6deZN1bslXzeGvOLaLMOIF
+      required: false
+      selector:
+        text:
+spotify_unfollow_album:
+  name: Unfollow Album in Spotify
+  description: Unfollow Album in Spotify Library
+  fields:
+    album_id:
+      name: Album ID
+      description: ID of Album to unfollow (adds current album if blank)
+      example: 5fKL7vMTXvhR9tov8Kqt3u
+      required: false
+      selector:
+        text:
+spotify_unfollow_track:
+  name: Unfollow Track in Spotify
+  description: Unfollow Track in Spotify Library
+  fields:
+    track_id:
+      name: Track URI
+      description: URI of Track to unfollow (adds current track if blank)
+      example: spotify:track:0gmbgwZ8iqyMPmXefof8Yf
+      required: false
+      selector:
+        text:
+spotify_unfollow_playlist:
+  name: Unfollow Playlist in Spotify
+  description: Unfollow Playlist in Spotify Library
+  fields:
+    playlist_id:
+      name: Playlist ID
+      description: ID of Playlist to unfollow (adds current playlist if blank)
+      example: 37i9dQZF1DZ06evO3FkgtG
+      required: false
+      selector:
+        text:
 spotify_details:
   name: Get Spotify Extras
   description: Update Spotify Extras

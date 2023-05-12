@@ -96,6 +96,7 @@ class SpotifyMusicMachine(RestoreEntity):
         random_artist_names = []
         random_track_names = []
         seed_details = []
+        unique_genres = []
         formatted_time = now.strftime("%Y-%m-%d %H:%M:%S")
         params = {
             "limit": 100,

@@ -436,7 +436,8 @@ class SpotifySongData(RestoreEntity):
         """Add Album to Spotify Library"""
         if "album_id" in call.data and call.data["album_id"]:
             await self.hass.async_add_executor_job(
-                self.data.client.current_user_saved_albums_delete, [call.data["album_id"]]
+                self.data.client.current_user_saved_albums_delete,
+                [call.data["album_id"]],
             )
             _LOGGER.debug("Spotify Album %s Deleted", call.data["album_id"])
         else:
@@ -452,7 +453,8 @@ class SpotifySongData(RestoreEntity):
         """Add Track to Spotify Library"""
         if "track_id" in call.data and call.data["track_id"]:
             await self.hass.async_add_executor_job(
-                self.data.client.current_user_saved_tracks_delete, [call.data["track_id"]]
+                self.data.client.current_user_saved_tracks_delete,
+                [call.data["track_id"]],
             )
             _LOGGER.debug("Spotify Track %s Deleted", call.data["track_id"])
         else:
@@ -468,7 +470,8 @@ class SpotifySongData(RestoreEntity):
         """Add Playlist to Spotify Library"""
         if "playlist_id" in call.data and call.data["playlist_id"]:
             await self.hass.async_add_executor_job(
-                self.data.client.current_user_unfollow_playlist, call.data["playlist_id"]
+                self.data.client.current_user_unfollow_playlist,
+                call.data["playlist_id"],
             )
             _LOGGER.debug("Spotify Playlist %s Deleted", call.data["playlist_id"])
         else:

@@ -2,6 +2,8 @@
 
 import datetime
 from typing import Any, Dict, Optional
+
+# from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.entity import DeviceInfo
 from . import HomeAssistantSpotifyData

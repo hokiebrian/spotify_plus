@@ -2,10 +2,37 @@
 
 from typing import Any, Dict, Optional
 from collections import defaultdict
+import requests
+from spotipy import SpotifyException
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.restore_state import RestoreEntity
 from . import HomeAssistantSpotifyData
 from .const import DOMAIN, _LOGGER
+
+
+def spotify_exception_handler(func):
+    """Decorate Spotify calls to handle Spotify exception.
+
+    A decorator that wraps the passed in function, catches Spotify errors,
+    aiohttp exceptions and handles the availability of the media player.
+    """
+
+    async def wrapper(self, *args, **kwargs):
+        # pylint: disable=protected-access
+        try:
+            result = await func(self, *args, **kwargs)
+            self._attr_available = True
+            return result
+        except requests.RequestException:
+            self._attr_available = False
+        except SpotifyException as exc:
+            self._attr_available = False
+            if exc.reason == "NO_ACTIVE_DEVICE":
+                raise HomeAssistantError("No active playback device found") from None
+            raise HomeAssistantError(f"Spotify error: {exc.reason}") from exc
+
+    return wrapper
 
 
 class SpotifyHistoryAnalysis(RestoreEntity):
@@ -69,6 +96,7 @@ class SpotifyHistoryAnalysis(RestoreEntity):
         """Return the state attributes of the sensor."""
         return self._extra_attributes
 
+    @spotify_exception_handler
     async def spotify_history_analysis(self, call):
         """Get Data to analyze"""
 

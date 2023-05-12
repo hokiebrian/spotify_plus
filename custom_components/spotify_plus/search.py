@@ -1,8 +1,11 @@
 """Sensor for Spotify Search."""
 import asyncio
 from typing import Any, Dict, Optional
+import requests
+from spotipy import SpotifyException
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.exceptions import HomeAssistantError
 from . import HomeAssistantSpotifyData
 from .const import DOMAIN, _LOGGER
 
@@ -14,10 +17,10 @@ def spotify_exception_handler(func):
     aiohttp exceptions and handles the availability of the media player.
     """
 
-    def wrapper(self, *args, **kwargs):
+    async def wrapper(self, *args, **kwargs):
         # pylint: disable=protected-access
         try:
-            result = func(self, *args, **kwargs)
+            result = await func(self, *args, **kwargs)
             self._attr_available = True
             return result
         except requests.RequestException:
@@ -84,6 +87,7 @@ class SpotifySearch(RestoreEntity):
         """Return the state attributes of the sensor."""
         return self._extra_attributes
 
+    @spotify_exception_handler
     async def spotify_search(self, call):
         """Perform search and divide up search results."""
 

@@ -2,10 +2,37 @@
 
 from typing import Any, Dict, Optional
 import asyncio
+import requests
+from spotipy import SpotifyException
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.exceptions import HomeAssistantError
 from . import HomeAssistantSpotifyData
 from .const import DOMAIN, _LOGGER
+
+
+def spotify_exception_handler(func):
+    """Decorate Spotify calls to handle Spotify exception.
+
+    A decorator that wraps the passed in function, catches Spotify errors,
+    aiohttp exceptions and handles the availability of the media player.
+    """
+
+    async def wrapper(self, *args, **kwargs):
+        # pylint: disable=protected-access
+        try:
+            result = await func(self, *args, **kwargs)
+            self._attr_available = True
+            return result
+        except requests.RequestException:
+            self._attr_available = False
+        except SpotifyException as exc:
+            self._attr_available = False
+            if exc.reason == "NO_ACTIVE_DEVICE":
+                raise HomeAssistantError("No active playback device found") from None
+            raise HomeAssistantError(f"Spotify error: {exc.reason}") from exc
+
+    return wrapper
 
 
 class SpotifyMyArtists(RestoreEntity):
@@ -103,6 +130,7 @@ class SpotifyMyArtists(RestoreEntity):
                 "artist_radio": artist_playlist_uri2,
             }
 
+    @spotify_exception_handler
     async def spotify_my_artists(self, call):
         """Gather 'My Artists' and get details."""
         artist_items = []
@@ -189,6 +217,7 @@ class SpotifyTopArtists(RestoreEntity):
         """Return the state attributes of the sensor."""
         return self._extra_attributes
 
+    @spotify_exception_handler
     async def search_playlists_async(self, semaphore, artist):
         """Search for Artist Playlists."""
         async with semaphore:
@@ -230,6 +259,7 @@ class SpotifyTopArtists(RestoreEntity):
                 "artist_radio": artist_playlist_uri_2,
             }
 
+    @spotify_exception_handler
     async def spotify_top_artists(self, call):
         """Gather 'Top Artists' and get details."""
         artist_items = []

@@ -4,6 +4,7 @@ from typing import Any, Dict, Optional
 import random
 import asyncio
 from datetime import datetime
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.entity import DeviceInfo
 from . import HomeAssistantSpotifyData
@@ -94,7 +95,6 @@ class SpotifyMusicMachine(RestoreEntity):
         now = datetime.now()
         random_artist_names = []
         random_track_names = []
-        unique_genres = []
         seed_details = []
         formatted_time = now.strftime("%Y-%m-%d %H:%M:%S")
         params = {
@@ -359,7 +359,7 @@ class SpotifyMusicMachine(RestoreEntity):
 
             if len(SEED_GENRES) > 0:
                 paramsx["seed_genres"] = SEED_GENRES
-                unique_genre = SEED_GENRES
+                unique_genres = SEED_GENRES
 
             if len(SEED_TRACKS) > 0:
                 paramsx["seed_tracks"] = SEED_TRACKS

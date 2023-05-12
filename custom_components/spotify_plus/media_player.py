@@ -383,7 +383,6 @@ class SpotifyMediaPlayer(MediaPlayerEntity):
             raise ValueError(f"Unsupported repeat mode: {repeat}")
         self.data.client.repeat(REPEAT_MODE_MAPPING_TO_SPOTIFY[repeat])
 
-    @spotify_exception_handler
     def update(self) -> None:
         """Update state and attributes."""
         if not self.enabled:

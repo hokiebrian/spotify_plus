@@ -252,9 +252,7 @@ class SpotifyPlus(SensorEntity):
                 _LOGGER.debug("Categories Cycles complete")
                 break
 
-        category_info = [
-            {"name": item["name"], "id": item["id"]} for item in category_data
-        ]
+        category_info = [item["name"] for item in category_data]
 
         _LOGGER.debug("Spotify Calls Completed")
 

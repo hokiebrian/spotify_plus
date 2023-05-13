@@ -429,18 +429,37 @@ class SpotifyCategoryPlaylists(RestoreEntity):
     async def spotify_category_playlists(self, call):
         """Get Category Playlists"""
 
-        category_id = call.data["category_id"]
+        category_name = call.data["category_name"]
+
+        category_data = []
+        offset = 0
+        limit = 50
+
+        while True:
+            all_categories = await self.hass.async_add_executor_job(
+                self.data.client.categories, self._user_country, None, limit, offset
+            )
+
+            valid_categories = list(all_categories["categories"]["items"])
+
+            category_data.extend(valid_categories)
+
+            offset += limit
+            if not all_categories["categories"]["next"]:
+                _LOGGER.debug("Categories Cycles complete")
+                break
+
+        for category in category_data:
+            if category["name"] == category_name:
+                category_id = category["id"]
 
         playlists = []
 
         category_playlists = await self.hass.async_add_executor_job(
             self.data.client.category_playlists, category_id, self._user_country, 50
         )
-        valid_playlists = [
-            playlist
-            for playlist in category_playlists["playlists"]["items"]
-            if playlist["tracks"]["total"] != 0
-        ]
+        valid_playlists = list(category_playlists["playlists"]["items"])
+
         playlists.extend(valid_playlists)
 
         self._state = f"{len(playlists)} Playlists"

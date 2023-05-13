@@ -11,11 +11,7 @@ from .const import DOMAIN, _LOGGER
 
 
 def spotify_exception_handler(func):
-    """Decorate Spotify calls to handle Spotify exception.
-
-    A decorator that wraps the passed in function, catches Spotify errors,
-    aiohttp exceptions and handles the availability of the media player.
-    """
+    """Decorate Spotify calls to handle Spotify exception."""
 
     async def wrapper(self, *args, **kwargs):
         # pylint: disable=protected-access
@@ -253,7 +249,7 @@ class SpotifySearch(RestoreEntity):
                         "tracks": item["tracks"]["total"],
                     }
                     for item in artist_playlists["playlists"]["items"]
-                    ## Try this search enhancement
+                    ## Enhances search to return items named or described properly
                     if search_param.lower() in item["name"].lower()
                     or search_param.lower() in item["description"].lower()
                 ]
@@ -429,7 +425,9 @@ class SpotifyCategoryPlaylists(RestoreEntity):
     async def spotify_category_playlists(self, call):
         """Get Category Playlists"""
 
+        playlists = []
         category_name = call.data["category_name"]
+        category_id = None
 
         category_data = []
         offset = 0
@@ -450,22 +448,21 @@ class SpotifyCategoryPlaylists(RestoreEntity):
                 break
 
         for category in category_data:
-            if category["name"] == category_name:
+            if category["name"].lower() == category_name.lower():
                 category_id = category["id"]
 
-        playlists = []
+        if category_id is not None:
+            category_playlists = await self.hass.async_add_executor_job(
+                self.data.client.category_playlists, category_id, self._user_country, 50
+            )
 
-        category_playlists = await self.hass.async_add_executor_job(
-            self.data.client.category_playlists, category_id, self._user_country, 50
-        )
+            valid_playlists = [
+                item
+                for item in category_playlists["playlists"]["items"]
+                if item is not None
+            ]
 
-        valid_playlists = [
-            item
-            for item in category_playlists["playlists"]["items"]
-            if item is not None
-        ]
-
-        playlists.extend(valid_playlists)
+            playlists.extend(valid_playlists)
 
         self._state = f"{len(playlists)} Playlists"
         self._extra_attributes = {"playlists": playlists}

@@ -12,11 +12,7 @@ from .const import DOMAIN, _LOGGER
 
 
 def spotify_exception_handler(func):
-    """Decorate Spotify calls to handle Spotify exception.
-
-    A decorator that wraps the passed in function, catches Spotify errors,
-    aiohttp exceptions and handles the availability of the media player.
-    """
+    """Decorate Spotify calls to handle Spotify exception."""
 
     async def wrapper(self, *args, **kwargs):
         # pylint: disable=protected-access

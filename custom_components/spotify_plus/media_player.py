@@ -94,7 +94,7 @@ def spotify_exception_handler(func):
             self._attr_available = False
             if exc.reason == "NO_ACTIVE_DEVICE":
                 raise HomeAssistantError("No active playback device found") from None
-            raise HomeAssistantError(f"Spotify error: {exc.reason}") from exc
+            raise HomeAssistantError(f"Spotify error") from None
 
     return wrapper
 
@@ -383,6 +383,7 @@ class SpotifyMediaPlayer(MediaPlayerEntity):
             raise ValueError(f"Unsupported repeat mode: {repeat}")
         self.data.client.repeat(REPEAT_MODE_MAPPING_TO_SPOTIFY[repeat])
 
+    @spotify_exception_handler
     def update(self) -> None:
         """Update state and attributes."""
         if not self.enabled:
@@ -409,12 +410,12 @@ class SpotifyMediaPlayer(MediaPlayerEntity):
 
         ## Add additional attributes to media_player entity. This requires no additional API calls.
         if current_playback is not None:
-            try:
+            if "item" in current_playback and "duration_ms" in current_playback["item"]:
                 duration_ms = current_playback["item"]["duration_ms"]
                 duration_sec = duration_ms // 1000
                 minutes, seconds = divmod(duration_sec, 60)
                 duration_str = f"{minutes:02d}:{seconds:02d}"
-            except:
+            else:
                 duration_ms = 1
                 duration_str = "00:00"
 

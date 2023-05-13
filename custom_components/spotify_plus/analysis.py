@@ -12,11 +12,7 @@ from .const import DOMAIN, _LOGGER
 
 
 def spotify_exception_handler(func):
-    """Decorate Spotify calls to handle Spotify exception.
-
-    A decorator that wraps the passed in function, catches Spotify errors,
-    aiohttp exceptions and handles the availability of the media player.
-    """
+    """Decorate Spotify calls to handle Spotify exception."""
 
     async def wrapper(self, *args, **kwargs):
         # pylint: disable=protected-access
@@ -30,7 +26,7 @@ def spotify_exception_handler(func):
             self._attr_available = False
             if exc.reason == "NO_ACTIVE_DEVICE":
                 raise HomeAssistantError("No active playback device found") from None
-            raise HomeAssistantError(f"Spotify error: {exc.reason}") from exc
+            raise HomeAssistantError(f"Spotify error") from None
 
     return wrapper
 

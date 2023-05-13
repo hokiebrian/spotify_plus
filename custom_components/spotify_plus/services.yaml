@@ -140,8 +140,8 @@ spotify_category_playlists:
     category_name:
       name: Category Name
       description: Category Name
-      example: dinner
-      required: false
+      example: Rock
+      required: true
       selector:
         text:
 spotify_music_machine:

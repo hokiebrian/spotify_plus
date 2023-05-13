@@ -458,7 +458,12 @@ class SpotifyCategoryPlaylists(RestoreEntity):
         category_playlists = await self.hass.async_add_executor_job(
             self.data.client.category_playlists, category_id, self._user_country, 50
         )
-        valid_playlists = list(category_playlists["playlists"]["items"])
+
+        valid_playlists = [
+            item
+            for item in category_playlists["playlists"]["items"]
+            if item is not None
+        ]
 
         playlists.extend(valid_playlists)
 

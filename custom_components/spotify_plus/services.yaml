@@ -132,7 +132,18 @@ spotify_search:
             - label: Artist Profile
               value: "Artist Profile"
             - label: General Search
-              value: "General Search"  
+              value: "General Search"
+spotify_category_playlists:
+  name: Get Playlists for Category
+  description: Fetch all playlists for a Category
+  fields:
+    category_id:
+      name: Category Name or ID
+      description: Category Name or ID
+      example: dinner, 0gmbgwZ8iqyMPmXefof8Yf
+      required: false
+      selector:
+        text:
 spotify_music_machine:
   name: Spotify Music Machine
   description: Create Custom Listening

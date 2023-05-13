@@ -14,6 +14,7 @@ from homeassistant.components.sensor import SensorEntity
 from . import HomeAssistantSpotifyData
 from .songdata import SpotifySongData
 from .search import SpotifySearch
+from .search import SpotifyCategoryPlaylists
 from .extras import SpotifyExtras
 from .history import SpotifyAddToHistory
 from .analysis import SpotifyHistoryAnalysis
@@ -55,6 +56,13 @@ async def async_setup_entry(
     )
 
     search = SpotifySearch(
+        hass.data[DOMAIN][entry.entry_id],
+        entry.data[CONF_ID],
+        entry.title,
+        entry.data["country"],
+    )
+
+    category_playlists = SpotifyCategoryPlaylists(
         hass.data[DOMAIN][entry.entry_id],
         entry.data[CONF_ID],
         entry.title,
@@ -108,6 +116,7 @@ async def async_setup_entry(
         songdata,
         analysis,
         search,
+        category_playlists,
         extras,
         top_artists,
         my_artists,
@@ -209,7 +218,6 @@ class SpotifyPlus(SensorEntity):
         spotify_seed_genres_task = self.hass.async_add_executor_job(
             self.data.client.recommendation_genre_seeds
         )
-
         (
             spotify_me,
             spotify_artist_number,
@@ -225,6 +233,28 @@ class SpotifyPlus(SensorEntity):
             spotify_playlist_number_task,
             spotify_seed_genres_task,
         )
+
+        category_data = []
+        offset = 0
+        limit = 50
+
+        while True:
+            all_categories = await self.hass.async_add_executor_job(
+                self.data.client.categories, self._user_country, None, limit, offset
+            )
+
+            valid_categories = list(all_categories["categories"]["items"])
+
+            category_data.extend(valid_categories)
+
+            offset += limit
+            if not all_categories["categories"]["next"]:
+                _LOGGER.debug("Categories Cycles complete")
+                break
+
+        category_info = [
+            {"name": item["name"], "id": item["id"]} for item in category_data
+        ]
 
         _LOGGER.debug("Spotify Calls Completed")
 
@@ -248,4 +278,5 @@ class SpotifyPlus(SensorEntity):
             "product": self._product,
             "devices": devices,
             "seed_genres": list(spotify_seed_genres["genres"]),
+            "categories": category_info,
         }

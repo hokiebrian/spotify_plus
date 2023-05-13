@@ -59,7 +59,7 @@ Usage:
 - See [EXAMPLES](/examples.md) for interface examples
 
 ### Stand-alone Sensors:
-#### `sensor.spotify_plus` - This reflects your User Profile with Spotify. It will provide your profile name, image, the number of artists, albums and track you follow/like and your available listening devices.
+#### `sensor.spotify_plus` - This reflects your User Profile with Spotify. It will provide your profile name, image, the number of artists, albums and track you follow/like and your available listening devices. Additionally, the available Seed Genres and Categories are updated here.
 
 ### Media Player:
 #### `media_player.spotify_ACCTNAME` - Standard media player entity, with some additional attributes. The additional attributes do not require any additional API calls.
@@ -99,11 +99,15 @@ This service does a deep dive on the current track. Track name, album, album tra
 #### TIP: Use an automation to trigger whenever the 'media_content_id' attribute changes on the media_player to call this service along with the `spotify_plus.spotify_extras` service.
 
 #### Additional Services Related to Song Data:
-These services will add the item to your library:
-* `spotify_plus.spotify_manage_artist`
-* `spotify_plus.spotify_manage_album`
-* `spotify_plus.spotify_manage_track`
-* `spotify_plus.spotify_manage_playlist`
+These services will add or remove the item to your library:
+* `spotify_plus.spotify_follow_artist`
+* `spotify_plus.spotify_follow_album`
+* `spotify_plus.spotify_follow_track`
+* `spotify_plus.spotify_follow_playlist`
+* `spotify_plus.spotify_unfollow_artist`
+* `spotify_plus.spotify_unfollow_album`
+* `spotify_plus.spotify_unfollow_track`
+* `spotify_plus.spotify_unfollow_playlist`
 #### TIP: Use this service as a tap_action for any visulized artist/album/track/playlist to one-click add to your library
 
 All of these services can accept the ID/URI for the artist/album/track/playlist as an optional argument. If no data is passed, it will assume the current artist/album/track/playlist that is currently playing
@@ -151,6 +155,11 @@ Search Spotify... with a twist! There are two search methods, `Artist Profile` a
 #### TIP: Use automations to automatically perform a search of the current artist to get real-time profile data of the currently playing artist
 #### TIP: Use URI from search results to perform actions, such as play_media, trigger a refreshed search (in the case of related artists) or even launch spotify with context using a url action.
 #### Sensor: `sensor.spotify_search` - shows most recent search term, attributes contain search results and search orgin type.
+
+***
+### Service: `spotify_plus.spotify_category_playlists`
+Pull up to 50 playlists for a specified category. The available categories for you are an attribute of the `sensor.spotify_plus` sensor. 
+#### Sensor:  `sensor.spotify_category_playlists` - playlists for the provided category.
 
 ***
 ## Troubleshooting:

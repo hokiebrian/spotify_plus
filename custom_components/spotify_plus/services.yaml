@@ -4,7 +4,7 @@ get_song_data:
 spotify_extras:
   name: Spotify Extras
   description: Spotify Queue and Recent Items
-spotify_manage_artist:
+spotify_follow_artist:
   name: Add Artist to Spotify
   description: Add Artist to Spotify Library
   fields:
@@ -15,7 +15,7 @@ spotify_manage_artist:
       required: false
       selector:
         text:
-spotify_manage_album:
+spotify_follow_album:
   name: Add Album to Spotify
   description: Add Album to Spotify Library
   fields:
@@ -26,7 +26,7 @@ spotify_manage_album:
       required: false
       selector:
         text:
-spotify_manage_track:
+spotify_follow_track:
   name: Add Track to Spotify
   description: Add Track to Spotify Library
   fields:
@@ -37,7 +37,7 @@ spotify_manage_track:
       required: false
       selector:
         text:
-spotify_manage_playlist:
+spotify_follow_playlist:
   name: Add Playlist to Spotify
   description: Add Playlist to Spotify Library
   fields:

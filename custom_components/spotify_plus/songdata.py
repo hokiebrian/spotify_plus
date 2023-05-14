@@ -106,10 +106,10 @@ class SpotifySongData(RestoreEntity):
     async def async_added_to_hass(self):
         service_options = {
             "get_song_data": self.get_song_data,
-            "spotify_manage_artist": self.spotify_manage_artist,
-            "spotify_manage_album": self.spotify_manage_album,
-            "spotify_manage_track": self.spotify_manage_track,
-            "spotify_manage_playlist": self.spotify_manage_playlist,
+            "spotify_follow_artist": self.spotify_follow_artist,
+            "spotify_follow_album": self.spotify_follow_album,
+            "spotify_follow_track": self.spotify_follow_track,
+            "spotify_follow_playlist": self.spotify_follow_playlist,
             "spotify_unfollow_artist": self.spotify_unfollow_artist,
             "spotify_unfollow_album": self.spotify_unfollow_album,
             "spotify_unfollow_track": self.spotify_unfollow_track,
@@ -350,7 +350,7 @@ class SpotifySongData(RestoreEntity):
         self.async_write_ha_state()
 
     @spotify_exception_handler
-    async def spotify_manage_artist(self, call):
+    async def spotify_follow_artist(self, call):
         """Add Artist to Spotify Library"""
         if "artist_id" in call.data and call.data["artist_id"]:
             await self.hass.async_add_executor_job(
@@ -365,7 +365,7 @@ class SpotifySongData(RestoreEntity):
                 _LOGGER.debug("Spotify Artist %s Added", self._current_artist_id)
 
     @spotify_exception_handler
-    async def spotify_manage_album(self, call):
+    async def spotify_follow_album(self, call):
         """Add Album to Spotify Library"""
         if "album_id" in call.data and call.data["album_id"]:
             await self.hass.async_add_executor_job(
@@ -381,7 +381,7 @@ class SpotifySongData(RestoreEntity):
                 _LOGGER.debug("Spotify Album %s Added", self._current_album_id)
 
     @spotify_exception_handler
-    async def spotify_manage_track(self, call):
+    async def spotify_follow_track(self, call):
         """Add Track to Spotify Library"""
         if "track_id" in call.data and call.data["track_id"]:
             await self.hass.async_add_executor_job(
@@ -397,7 +397,7 @@ class SpotifySongData(RestoreEntity):
                 _LOGGER.debug("Spotify Track %s Added", self._current_track_uri)
 
     @spotify_exception_handler
-    async def spotify_manage_playlist(self, call):
+    async def spotify_follow_playlist(self, call):
         """Add Playlist to Spotify Library"""
         if "playlist_id" in call.data and call.data["playlist_id"]:
             await self.hass.async_add_executor_job(

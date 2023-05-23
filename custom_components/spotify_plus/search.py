@@ -452,17 +452,29 @@ class SpotifyCategoryPlaylists(RestoreEntity):
                 category_id = category["id"]
 
         if category_id is not None:
-            category_playlists = await self.hass.async_add_executor_job(
-                self.data.client.category_playlists, category_id, self._user_country, 50
-            )
+            offset = 0
+            limit = 50
+            while True:
+                category_playlists = await self.hass.async_add_executor_job(
+                    self.data.client.category_playlists,
+                    category_id,
+                    self._user_country,
+                    limit,
+                    offset,
+                )
 
-            valid_playlists = [
-                item
-                for item in category_playlists["playlists"]["items"]
-                if item is not None
-            ]
+                valid_playlists = [
+                    item
+                    for item in category_playlists["playlists"]["items"]
+                    if item is not None
+                ]
 
-            playlists.extend(valid_playlists)
+                playlists.extend(valid_playlists)
+
+                if category_playlists["playlists"]["next"]:
+                    offset += limit
+                else:
+                    break
 
         self._state = f"{len(playlists)} Playlists"
         self._extra_attributes = {"playlists": playlists}

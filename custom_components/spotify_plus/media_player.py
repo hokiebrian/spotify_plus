@@ -410,7 +410,12 @@ class SpotifyMediaPlayer(MediaPlayerEntity):
 
         ## Add additional attributes to media_player entity. This requires no additional API calls.
         if current_playback is not None:
-            if "item" in current_playback and "duration_ms" in current_playback["item"]:
+            if (
+                isinstance(current_playback, dict)
+                and "item" in current_playback
+                and isinstance(current_playback["item"], dict)
+                and "duration_ms" in current_playback["item"]
+            ):
                 duration_ms = current_playback["item"]["duration_ms"]
                 duration_sec = duration_ms // 1000
                 minutes, seconds = divmod(duration_sec, 60)

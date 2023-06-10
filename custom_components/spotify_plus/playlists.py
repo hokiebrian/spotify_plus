@@ -171,16 +171,8 @@ class SpotifyPlaylists(RestoreEntity):
                 base_info = {
                     "name": playlist.get("name", ""),
                     "uri": playlist.get("uri", ""),
-                    "image": (
-                        playlist["images"][0]["url"]
-                        if "images" in playlist and len(playlist["images"]) > 0
-                        else ""
-                    ),
-                    "owner": (
-                        playlist["owner"]["display_name"]
-                        if "owner" in playlist and "display_name" in playlist["owner"]
-                        else ""
-                    ),
+                    "image": playlist.get("images", [{}])[0].get("url", ""),
+                    "owner": playlist.get("owner", {}).get("display_name", ""),
                     "description": playlist.get("description", ""),
                 }
 

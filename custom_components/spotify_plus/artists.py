@@ -88,10 +88,10 @@ class SpotifyMyArtists(RestoreEntity):
     async def search_playlists_async(self, semaphore, artist):
         """Search for Artist Playlists."""
         async with semaphore:
-            artist_playlist_uri1 = "spotify:"
-            artist_playlist_uri2 = "spotify:"
-            artist_playlist_name1 = "N/A"
-            artist_playlist_name2 = "N/A"
+            artist_playlist_uri_1 = "spotify:"
+            artist_playlist_uri_2 = "spotify:"
+            artist_playlist_name_1 = "N/A"
+            artist_playlist_name_2 = "N/A"
 
             artist_name = artist["name"]
             search_param = artist_name.lower()
@@ -106,24 +106,24 @@ class SpotifyMyArtists(RestoreEntity):
                 self._user_country,
             )
 
-            if srch["playlists"]["items"]:
-                for p_list in srch["playlists"]["items"]:
+            if srch.get("playlists", {}).get("items") is not None:
+                for p_list in srch.get("playlists", {}).get("items", []):
                     if p_list.get("owner", {}).get("id", "") == "spotify":
-                        if p_list["name"] == pl1:
-                            artist_playlist_uri1 = p_list["uri"]
-                            artist_playlist_name1 = p_list["name"]
-                        elif p_list["name"] == pl2:
-                            artist_playlist_uri2 = p_list["uri"]
-                            artist_playlist_name2 = p_list["name"]
+                        if p_list.get("name") == pl1:
+                            artist_playlist_uri_1 = p_list.get("uri")
+                            artist_playlist_name_1 = p_list.get("name")
+                        elif p_list.get("name") == pl2:
+                            artist_playlist_uri_2 = p_list.get("uri")
+                            artist_playlist_name_2 = p_list.get("name")
 
             return {
-                "name": artist["name"],
-                "uri": artist["uri"],
-                "image": artist["images"][0]["url"],
-                "artist_playlist_name": artist_playlist_name1,
-                "artist_playlist": artist_playlist_uri1,
-                "artist_radio_name": artist_playlist_name2,
-                "artist_radio": artist_playlist_uri2,
+                "name": artist.get("name"),
+                "uri": artist.get("uri"),
+                "image": artist.get("images", [{}])[0].get("url"),
+                "artist_playlist_name": artist_playlist_name_1,
+                "artist_playlist": artist_playlist_uri_1,
+                "artist_radio_name": artist_playlist_name_2,
+                "artist_radio": artist_playlist_uri_2,
             }
 
     @spotify_exception_handler
@@ -150,7 +150,10 @@ class SpotifyMyArtists(RestoreEntity):
             tasks.append(self.search_playlists_async(semaphore, artist))
         artist_results = await asyncio.gather(*tasks)
 
-        artists = sorted(artist_results, key=lambda x: x["name"].replace("The ", ""))
+        artists = sorted(
+            filter(lambda x: "name" in x, artist_results),
+            key=lambda x: x["name"].replace("The ", ""),
+        )
 
         _LOGGER.debug("My Artists retrieved and sorted")
 
@@ -222,7 +225,7 @@ class SpotifyTopArtists(RestoreEntity):
             artist_playlist_name_1 = "N/A"
             artist_playlist_name_2 = "N/A"
 
-            artist_name = artist["name"]
+            artist_name = artist.get("name", "")
             search_param = artist_name.lower()
             pl1 = "This Is " + artist_name
             pl2 = artist_name + " Radio"
@@ -235,20 +238,20 @@ class SpotifyTopArtists(RestoreEntity):
                 self._user_country,
             )
 
-            if srch["playlists"]["items"] is not None:
-                for p_list in srch["playlists"]["items"]:
+            if srch.get("playlists", {}).get("items") is not None:
+                for p_list in srch.get("playlists", {}).get("items", []):
                     if p_list.get("owner", {}).get("id", "") == "spotify":
-                        if p_list["name"] == pl1:
-                            artist_playlist_uri_1 = p_list["uri"]
-                            artist_playlist_name_1 = p_list["name"]
-                        elif p_list["name"] == pl2:
-                            artist_playlist_uri_2 = p_list["uri"]
-                            artist_playlist_name_2 = p_list["name"]
+                        if p_list.get("name") == pl1:
+                            artist_playlist_uri_1 = p_list.get("uri")
+                            artist_playlist_name_1 = p_list.get("name")
+                        elif p_list.get("name") == pl2:
+                            artist_playlist_uri_2 = p_list.get("uri")
+                            artist_playlist_name_2 = p_list.get("name")
 
             return {
-                "name": artist["name"],
-                "uri": artist["uri"],
-                "image": artist["images"][0]["url"],
+                "name": artist.get("name"),
+                "uri": artist.get("uri"),
+                "image": artist.get("images", [{}])[0].get("url"),
                 "artist_playlist_name": artist_playlist_name_1,
                 "artist_playlist": artist_playlist_uri_1,
                 "artist_radio_name": artist_playlist_name_2,
@@ -278,7 +281,11 @@ class SpotifyTopArtists(RestoreEntity):
             tasks.append(self.search_playlists_async(semaphore, artist))
         artist_results = await asyncio.gather(*tasks)
 
-        artists = sorted(artist_results, key=lambda x: x["name"].replace("The ", ""))
+        artists = sorted(
+            filter(lambda x: "name" in x, artist_results),
+            key=lambda x: x["name"].replace("The ", ""),
+        )
+
         _LOGGER.debug("Top Artists retrieved and sorted")
 
         self._state = f"{len(artists)} Artists"

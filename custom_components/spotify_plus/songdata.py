@@ -158,20 +158,37 @@ class SpotifySongData(RestoreEntity):
         if current_playback is None:
             self._state = None
         else:
-            self._state = current_playback["item"]["name"]
-            self._current_artist_name = current_playback["item"]["artists"][0]["name"]
-            self._current_artist_id = current_playback["item"]["artists"][0]["id"]
-            self._current_artist_uri = current_playback["item"]["artists"][0]["uri"]
-            self._current_album_id = current_playback["item"]["album"]["id"]
-            self._current_album_uri = current_playback["item"]["album"]["uri"]
-            self._current_album_img = current_playback["item"]["album"]["images"]
-            self._current_track_name = current_playback["item"]["name"]
-            self._current_track_id = current_playback["item"]["id"]
-            self._current_track_uri = current_playback["item"]["uri"]
-            self._current_album_name = current_playback["item"]["album"]["name"]
-            self._current_track_isrc = current_playback["item"]["external_ids"][
-                "isrc"
-            ].upper()
+            self._state = current_playback.get("item", {}).get("name")
+            self._current_artist_name = (
+                current_playback.get("item", {}).get("artists", [{}])[0].get("name")
+            )
+            self._current_artist_id = (
+                current_playback.get("item", {}).get("artists", [{}])[0].get("id")
+            )
+            self._current_artist_uri = (
+                current_playback.get("item", {}).get("artists", [{}])[0].get("uri")
+            )
+            self._current_album_id = (
+                current_playback.get("item", {}).get("album", {}).get("id")
+            )
+            self._current_album_uri = (
+                current_playback.get("item", {}).get("album", {}).get("uri")
+            )
+            self._current_album_img = (
+                current_playback.get("item", {}).get("album", {}).get("images")
+            )
+            self._current_track_name = current_playback.get("item", {}).get("name")
+            self._current_track_id = current_playback.get("item", {}).get("id")
+            self._current_track_uri = current_playback.get("item", {}).get("uri")
+            self._current_album_name = (
+                current_playback.get("item", {}).get("album", {}).get("name")
+            )
+            self._current_track_isrc = (
+                current_playback.get("item", {})
+                .get("external_ids", {})
+                .get("isrc", "")
+                .upper()
+            )
 
             ## Get details based on track for additional data
             following_artist_task = self.hass.async_add_executor_job(

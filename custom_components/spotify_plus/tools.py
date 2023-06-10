@@ -4,7 +4,6 @@ from typing import Any, Dict, Optional
 import random
 import asyncio
 from datetime import datetime
-from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.entity import DeviceInfo
 from . import HomeAssistantSpotifyData
@@ -369,7 +368,7 @@ class SpotifyMusicMachine(RestoreEntity):
                 )
                 random_track_names = [track["name"] for track in tracks_info["tracks"]]
 
-            _LOGGER.debug(f"User Provided Seed Params: {paramsx}")
+            _LOGGER.debug("User Provided Seed Params: %s", paramsx)
 
             recsx = await self.hass.async_add_executor_job(
                 lambda: self.data.client.recommendations(**paramsx)

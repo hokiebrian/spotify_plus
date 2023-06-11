@@ -125,7 +125,13 @@ class SpotifyHistoryAnalysis(RestoreEntity):
         ## Count Artists
         artist_play_count = defaultdict(int)
         for item in playlist_items:
-            for artist in item["track"]["artists"]:
+            try:
+                track_artists = item["track"]["artists"]
+            except KeyError:
+                _LOGGER.error("Artists not found in track data: %s", item)
+                continue  # Skip this item and continue with the next one
+
+            for artist in track_artists:
                 artist_play_count[artist["name"]] += 1
 
         ## For brevity, the list trims artist count of 1

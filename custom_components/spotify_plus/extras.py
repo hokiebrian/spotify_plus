@@ -74,16 +74,19 @@ class SpotifyExtras(Entity):
             spotify_recent = {"items": []}
 
         ## Build Queue Data
-        queue_list = [
-            {
-                "trackname": track["name"],
-                "trackartist": track["artists"][0]["name"],
-                "trackuri": track["uri"],
-                "trackid": track["id"],
-                "image": track["album"].get("images", [{}])[0].get("url"),
-            }
-            for track in spotify_queue.get("queue", [])
-        ]
+        queue_list = []
+        for track in spotify_queue.get("queue", []):
+            try:
+                track_dict = {
+                    "trackname": track["name"],
+                    "trackartist": track["artists"][0]["name"],
+                    "trackuri": track["uri"],
+                    "trackid": track["id"],
+                    "image": track["album"].get("images", [{}])[0].get("url"),
+                }
+                queue_list.append(track_dict)
+            except Exception as e:
+                _LOGGER.debug(f"Error with {track_dict} - error: {e}")
 
         ## Bulk check if items are in library, merge with queue items
         uris = [track["trackuri"] for track in queue_list]
@@ -97,16 +100,19 @@ class SpotifyExtras(Entity):
         _LOGGER.debug("Queue Retrieved")
 
         ## Build Recent Items Data
-        recent_list = [
-            {
-                "trackname": item["track"]["name"],
-                "trackartist": item["track"]["artists"][0]["name"],
-                "trackuri": item["track"]["uri"],
-                "image": item["track"]["album"].get("images", [{}])[0].get("url"),
-                "played": item["played_at"],
-            }
-            for item in spotify_recent.get("items", [])
-        ]
+        recent_list = []
+        for item in spotify_recent.get("items", []):
+            try:
+                track_dict = {
+                    "trackname": item["track"]["name"],
+                    "trackartist": item["track"]["artists"][0]["name"],
+                    "trackuri": item["track"]["uri"],
+                    "image": item["track"]["album"].get("images", [{}])[0].get("url"),
+                    "played": item["played_at"],
+                }
+                recent_list.append(track_dict)
+            except Exception as e:
+                _LOGGER.debug(f"Error with {track_dict} - error: {e}")
 
         ## Bulk check if items are in library, merge with recent items
         uris = [track["trackuri"] for track in recent_list]

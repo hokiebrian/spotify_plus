@@ -87,7 +87,6 @@ class SpotifyPlaylists(RestoreEntity):
         """Return the state attributes of the sensor."""
         return self._extra_attributes
 
-    @spotify_exception_handler
     async def spotify_playlists(self, call):
         """Build Playlist Details"""
         ## Limit of 10 concurrent connections to Spotify API, reduced here to 8 to prevent pile up.
@@ -127,7 +126,14 @@ class SpotifyPlaylists(RestoreEntity):
                 self._user_country,
             )
 
-            track_uris = [item["track"]["uri"] for item in playlist_tracks["items"]]
+            track_uris = []
+            for item in playlist_tracks.get("items", []):
+                try:
+                    uri = item["track"]["uri"]
+                    track_uris.append(uri)
+                except (TypeError, KeyError):
+                    pass
+
             track_popularity = [
                 item["track"]["popularity"] for item in playlist_tracks["items"]
             ]
@@ -168,13 +174,28 @@ class SpotifyPlaylists(RestoreEntity):
                 playlist_id = playlist.get("uri", "")
                 analysis = await analyze_playlist_async(playlist_id)
 
-                base_info = {
-                    "name": playlist.get("name", ""),
-                    "uri": playlist.get("uri", ""),
-                    "image": playlist.get("images", [{}])[0].get("url", ""),
-                    "owner": playlist.get("owner", {}).get("display_name", ""),
-                    "description": playlist.get("description", ""),
-                }
+                base_info = {}
+                try:
+                    base_info["name"] = playlist.get("name", "")
+                    base_info["uri"] = playlist.get("uri", "")
+                    base_info["description"] = playlist.get("description", "")
+
+                    try:
+                        base_info["image"] = playlist.get("images", [{}])[0].get(
+                            "url", ""
+                        )
+                    except Exception:
+                        base_info["image"] = ""
+
+                    try:
+                        base_info["owner"] = playlist.get("owner", {}).get(
+                            "display_name", ""
+                        )
+                    except Exception:
+                        base_info["owner"] = ""
+
+                except Exception:
+                    pass
 
                 return {**base_info, **analysis}
 

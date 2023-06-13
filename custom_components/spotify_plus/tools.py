@@ -425,18 +425,22 @@ class SpotifyMusicMachine(RestoreEntity):
                 _LOGGER.error("Playlist Creation Failure: %s", err)
         _LOGGER.debug("Playlist URI %s", context_playlist)
 
-        if play_now and not create_playlist:
-            await self.hass.async_add_executor_job(
-                self.data.client.start_playback, None, None, rec_tracks
-            )
-            playlist_name = "Queue Only"
-            _LOGGER.debug("Queue Created")
+        try:
+            if play_now and not create_playlist:
+                await self.hass.async_add_executor_job(
+                    self.data.client.start_playback, None, None, rec_tracks
+                )
+                playlist_name = "Queue Only"
+                _LOGGER.debug("Queue Created")
 
-        if play_now and create_playlist:
-            await self.hass.async_add_executor_job(
-                self.data.client.start_playback, None, context_playlist
-            )
-            _LOGGER.debug("Playlist %s Created", context_playlist)
+            if play_now and create_playlist:
+                await self.hass.async_add_executor_job(
+                    self.data.client.start_playback, None, context_playlist
+                )
+                _LOGGER.debug("Playlist %s Created", context_playlist)
+
+        except Exception as e:
+            _LOGGER.error(f"Error occurred during playback: {e}")
 
         results_meta = {
             "Playlist Name": playlist_name,

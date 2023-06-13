@@ -92,7 +92,6 @@ class SpotifyHistoryAnalysis(RestoreEntity):
         """Return the state attributes of the sensor."""
         return self._extra_attributes
 
-    @spotify_exception_handler
     async def spotify_history_analysis(self, call):
         """Get Data to analyze"""
 

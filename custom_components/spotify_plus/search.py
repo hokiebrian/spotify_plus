@@ -117,167 +117,181 @@ class SpotifySearch(RestoreEntity):
                 self._user_country,
             )
 
-            main_artist_id = search_items["artists"]["items"][0]["id"]
-            main_artist_name = search_items["artists"]["items"][0]["name"]
+            if search_items.get("artists", {}).get("items"):
+                main_artist_id = search_items["artists"]["items"][0]["id"]
+                main_artist_name = search_items["artists"]["items"][0]["name"]
+            else:
+                main_artist_id = None
+                main_artist_name = None
 
             ## Build concurrent queries to get all of the data
-            artist_playlists_task = self.hass.async_add_executor_job(
-                self.data.client.search,
-                main_artist_name,
-                30,
-                0,
-                "playlist",
-                self._user_country,
-            )
-            artist_albums_task = self.hass.async_add_executor_job(
-                self.data.client.artist_albums,
-                main_artist_id,
-                "album",
-                self._user_country,
-                50,
-            )
-            related_artists_task = self.hass.async_add_executor_job(
-                self.data.client.artist_related_artists, main_artist_id
-            )
-            top_tracks_task = self.hass.async_add_executor_job(
-                self.data.client.artist_top_tracks, main_artist_id, self._user_country
-            )
-            artist_profile_task = self.hass.async_add_executor_job(
-                self.data.client.artist, main_artist_id
-            )
-            artist_follow_task = self.hass.async_add_executor_job(
-                self.data.client.current_user_following_artists, [main_artist_id]
-            )
-            _LOGGER.debug("Artist %s Profile retrieved", search_param)
+            if main_artist_id is None or main_artist_name is None:
+                _LOGGER.debug("Main artist ID or name not found. Skipping tasks.")
+            else:
+                # Only perform these tasks if main_artist_id and main_artist_name are not None
+                artist_playlists_task = self.hass.async_add_executor_job(
+                    self.data.client.search,
+                    main_artist_name,
+                    30,
+                    0,
+                    "playlist",
+                    self._user_country,
+                )
+                artist_albums_task = self.hass.async_add_executor_job(
+                    self.data.client.artist_albums,
+                    main_artist_id,
+                    "album",
+                    self._user_country,
+                    50,
+                )
+                related_artists_task = self.hass.async_add_executor_job(
+                    self.data.client.artist_related_artists, main_artist_id
+                )
+                top_tracks_task = self.hass.async_add_executor_job(
+                    self.data.client.artist_top_tracks,
+                    main_artist_id,
+                    self._user_country,
+                )
+                artist_profile_task = self.hass.async_add_executor_job(
+                    self.data.client.artist, main_artist_id
+                )
+                artist_follow_task = self.hass.async_add_executor_job(
+                    self.data.client.current_user_following_artists, [main_artist_id]
+                )
+                _LOGGER.debug("Artist %s Profile retrieved", search_param)
 
-            (
-                related_artists,
-                top_tracks,
-                artist_albums,
-                artist_playlists,
-                artist_profile,
-                artist_follow,
-            ) = await asyncio.gather(
-                related_artists_task,
-                top_tracks_task,
-                artist_albums_task,
-                artist_playlists_task,
-                artist_profile_task,
-                artist_follow_task,
-            )
-
-            if "tracks" in top_tracks:
-                search_results["tracks"] = [
-                    {
-                        "name": item["name"],
-                        "artists": item["artists"][0]["name"],
-                        "image": item["album"]["images"][0]["url"],
-                        "uri": item["uri"],
-                        "id": item["id"],
-                        "info": item["name"],
-                        "popularity": item.get("popularity", 0),
-                        "release": item["album"]["release_date"][0:4],
-                    }
-                    for item in top_tracks["tracks"]
-                ]
-
-                uris = [track["uri"] for track in search_results["tracks"]]
-                check_follow = await self.hass.async_add_executor_job(
-                    self.data.client.current_user_saved_tracks_contains, uris
+                (
+                    related_artists,
+                    top_tracks,
+                    artist_albums,
+                    artist_playlists,
+                    artist_profile,
+                    artist_follow,
+                ) = await asyncio.gather(
+                    related_artists_task,
+                    top_tracks_task,
+                    artist_albums_task,
+                    artist_playlists_task,
+                    artist_profile_task,
+                    artist_follow_task,
                 )
 
-                for track, value in zip(search_results["tracks"], check_follow):
-                    track["saved"] = value
+                if "tracks" in top_tracks:
+                    search_results["tracks"] = [
+                        {
+                            "name": item["name"],
+                            "artists": item["artists"][0]["name"],
+                            "image": item["album"]["images"][0]["url"],
+                            "uri": item["uri"],
+                            "id": item["id"],
+                            "info": item["name"],
+                            "popularity": item.get("popularity", 0),
+                            "release": item["album"]["release_date"][0:4],
+                        }
+                        for item in top_tracks["tracks"]
+                    ]
 
-            if artist_albums["total"] > 0:
-                search_results["albums"] = [
+                    uris = [track["uri"] for track in search_results["tracks"]]
+                    check_follow = await self.hass.async_add_executor_job(
+                        self.data.client.current_user_saved_tracks_contains, uris
+                    )
+
+                    for track, value in zip(search_results["tracks"], check_follow):
+                        track["saved"] = value
+
+                if artist_albums["total"] > 0:
+                    search_results["albums"] = [
+                        {
+                            "name": item["name"],
+                            "artists": item["artists"][0]["name"],
+                            "image": item["images"][0]["url"],
+                            "uri": item["uri"],
+                            "id": item["id"],
+                            "info": item["name"],
+                            "release": item["release_date"][0:4],
+                        }
+                        for item in artist_albums["items"]
+                    ]
+
+                    uris = [album["uri"] for album in search_results["albums"]]
+                    check_follow = await self.hass.async_add_executor_job(
+                        self.data.client.current_user_saved_albums_contains, uris
+                    )
+
+                    for album, value in zip(search_results["albums"], check_follow):
+                        album["saved"] = value
+
+                    search_results["albums"].sort(
+                        key=lambda x: x["release"], reverse=True
+                    )
+
+                search_results["related_artists"] = [
                     {
                         "name": item["name"],
-                        "artists": item["artists"][0]["name"],
+                        "artists": item["name"],
                         "image": item["images"][0]["url"],
                         "uri": item["uri"],
                         "id": item["id"],
                         "info": item["name"],
-                        "release": item["release_date"][0:4],
+                        "popularity": item.get("popularity", 0),
                     }
-                    for item in artist_albums["items"]
+                    for item in related_artists["artists"]
                 ]
 
-                uris = [album["uri"] for album in search_results["albums"]]
+                uris = [artist["uri"] for artist in search_results["related_artists"]]
                 check_follow = await self.hass.async_add_executor_job(
-                    self.data.client.current_user_saved_albums_contains, uris
+                    self.data.client.current_user_following_artists, uris
                 )
 
-                for album, value in zip(search_results["albums"], check_follow):
-                    album["saved"] = value
+                for artist, value in zip(
+                    search_results["related_artists"], check_follow
+                ):
+                    artist["saved"] = value
 
-                search_results["albums"].sort(key=lambda x: x["release"], reverse=True)
+                if artist_playlists["playlists"]["total"] > 0:
+                    search_results["playlists"] = [
+                        {
+                            "name": item["name"],
+                            "artists": None,
+                            "image": item["images"][0]["url"]
+                            if len(item["images"]) > 0
+                            else None,
+                            "uri": item["uri"],
+                            "id": item["id"],
+                            "info": item["description"],
+                            "owner": item["owner"]["display_name"],
+                            "tracks": item["tracks"]["total"],
+                        }
+                        for item in artist_playlists["playlists"]["items"]
+                        ## Enhances search to return items named or described properly
+                        if search_param.lower() in item["name"].lower()
+                        or search_param.lower() in item["description"].lower()
+                    ]
 
-            search_results["related_artists"] = [
-                {
-                    "name": item["name"],
-                    "artists": item["name"],
-                    "image": item["images"][0]["url"],
-                    "uri": item["uri"],
-                    "id": item["id"],
-                    "info": item["name"],
-                    "popularity": item.get("popularity", 0),
+                    search_results["playlists"].sort(
+                        key=lambda x: x["owner"].lower() == "spotify", reverse=True
+                    )
+
+                followers = artist_profile["followers"]["total"]
+                formatted_followers = (
+                    f"{followers / 1000000:.1f}M"
+                    if followers >= 1000000
+                    else f"{followers / 1000:.1f}k"
+                    if followers >= 1000
+                    else str(followers)
+                )
+
+                search_results["profile"] = {
+                    "name": artist_profile["name"],
+                    "followers": formatted_followers,
+                    "genres": artist_profile["genres"],
+                    "id": artist_profile["id"],
+                    "image": artist_profile["images"][0]["url"],
+                    "popularity": artist_profile["popularity"],
+                    "following": artist_follow[0],
                 }
-                for item in related_artists["artists"]
-            ]
 
-            uris = [artist["uri"] for artist in search_results["related_artists"]]
-            check_follow = await self.hass.async_add_executor_job(
-                self.data.client.current_user_following_artists, uris
-            )
-
-            for artist, value in zip(search_results["related_artists"], check_follow):
-                artist["saved"] = value
-
-            if artist_playlists["playlists"]["total"] > 0:
-                search_results["playlists"] = [
-                    {
-                        "name": item["name"],
-                        "artists": None,
-                        "image": item["images"][0]["url"]
-                        if len(item["images"]) > 0
-                        else None,
-                        "uri": item["uri"],
-                        "id": item["id"],
-                        "info": item["description"],
-                        "owner": item["owner"]["display_name"],
-                        "tracks": item["tracks"]["total"],
-                    }
-                    for item in artist_playlists["playlists"]["items"]
-                    ## Enhances search to return items named or described properly
-                    if search_param.lower() in item["name"].lower()
-                    or search_param.lower() in item["description"].lower()
-                ]
-
-                search_results["playlists"].sort(
-                    key=lambda x: x["owner"].lower() == "spotify", reverse=True
-                )
-
-            followers = artist_profile["followers"]["total"]
-            formatted_followers = (
-                f"{followers / 1000000:.1f}M"
-                if followers >= 1000000
-                else f"{followers / 1000:.1f}k"
-                if followers >= 1000
-                else str(followers)
-            )
-
-            search_results["profile"] = {
-                "name": artist_profile["name"],
-                "followers": formatted_followers,
-                "genres": artist_profile["genres"],
-                "id": artist_profile["id"],
-                "image": artist_profile["images"][0]["url"],
-                "popularity": artist_profile["popularity"],
-                "following": artist_follow[0],
-            }
-
-            self._state = "Artist Profile"
+                self._state = "Artist Profile"
 
         else:
             search_items = await self.hass.async_add_executor_job(

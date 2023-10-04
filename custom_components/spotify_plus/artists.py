@@ -93,10 +93,15 @@ class SpotifyMyArtists(RestoreEntity):
             artist_playlist_name_1 = "N/A"
             artist_playlist_name_2 = "N/A"
 
-            artist_name = artist["name"]
+            artist_name = artist.get("name", "")
+            if not artist_name:
+                _LOGGER.error("Artist name missing")
+                return
+
             search_param = artist_name.lower()
-            pl1 = "This Is " + artist_name
-            pl2 = artist_name + " Radio"
+            pl1 = f"This Is {artist_name}"
+            pl2 = f"{artist_name} Radio"
+
             srch = await self.hass.async_add_executor_job(
                 self.data.client.search,
                 search_param,
@@ -105,16 +110,22 @@ class SpotifyMyArtists(RestoreEntity):
                 "playlist",
                 self._user_country,
             )
+            
+            playlists = srch.get("playlists", {}).get("items")
+            if playlists is None or not isinstance(playlists, list):
+                _LOGGER.error("Playlists are missing or not a list")
+                return
 
-            if srch.get("playlists", {}).get("items") is not None:
-                for p_list in srch.get("playlists", {}).get("items", []):
-                    if p_list.get("owner", {}).get("id", "") == "spotify":
-                        if p_list.get("name") == pl1:
-                            artist_playlist_uri_1 = p_list.get("uri")
-                            artist_playlist_name_1 = p_list.get("name")
-                        elif p_list.get("name") == pl2:
-                            artist_playlist_uri_2 = p_list.get("uri")
-                            artist_playlist_name_2 = p_list.get("name")
+            for p_list in playlists:
+                owner = p_list.get("owner")
+                if owner is not None and isinstance(owner, dict) and owner.get("id") == "spotify":
+                    p_list_name = p_list.get("name")
+                    if p_list_name == pl1:
+                        artist_playlist_uri_1 = p_list.get("uri")
+                        artist_playlist_name_1 = p_list_name
+                    elif p_list_name == pl2:
+                        artist_playlist_uri_2 = p_list.get("uri")
+                        artist_playlist_name_2 = p_list_name
 
             return {
                 "name": artist.get("name"),
@@ -226,9 +237,14 @@ class SpotifyTopArtists(RestoreEntity):
             artist_playlist_name_2 = "N/A"
 
             artist_name = artist.get("name", "")
+            if not artist_name:
+                _LOGGER.error("Artist name missing")
+                return
+
             search_param = artist_name.lower()
-            pl1 = "This Is " + artist_name
-            pl2 = artist_name + " Radio"
+            pl1 = f"This Is {artist_name}"
+            pl2 = f"{artist_name} Radio"
+
             srch = await self.hass.async_add_executor_job(
                 self.data.client.search,
                 search_param,
@@ -237,16 +253,22 @@ class SpotifyTopArtists(RestoreEntity):
                 "playlist",
                 self._user_country,
             )
+            
+            playlists = srch.get("playlists", {}).get("items")
+            if playlists is None or not isinstance(playlists, list):
+                _LOGGER.error("Playlists are missing or not a list")
+                return
 
-            if srch.get("playlists", {}).get("items") is not None:
-                for p_list in srch.get("playlists", {}).get("items", []):
-                    if p_list.get("owner", {}).get("id", "") == "spotify":
-                        if p_list.get("name") == pl1:
-                            artist_playlist_uri_1 = p_list.get("uri")
-                            artist_playlist_name_1 = p_list.get("name")
-                        elif p_list.get("name") == pl2:
-                            artist_playlist_uri_2 = p_list.get("uri")
-                            artist_playlist_name_2 = p_list.get("name")
+            for p_list in playlists:
+                owner = p_list.get("owner")
+                if owner is not None and isinstance(owner, dict) and owner.get("id") == "spotify":
+                    p_list_name = p_list.get("name")
+                    if p_list_name == pl1:
+                        artist_playlist_uri_1 = p_list.get("uri")
+                        artist_playlist_name_1 = p_list_name
+                    elif p_list_name == pl2:
+                        artist_playlist_uri_2 = p_list.get("uri")
+                        artist_playlist_name_2 = p_list_name
 
             return {
                 "name": artist.get("name"),

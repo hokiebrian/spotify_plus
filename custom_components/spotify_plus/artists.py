@@ -155,7 +155,7 @@ class SpotifyMyArtists(RestoreEntity):
             )
             artist_items += my_artists["artists"]["items"]
 
-        semaphore = asyncio.Semaphore(8)
+        semaphore = asyncio.Semaphore(6)
         tasks = []
         for artist in artist_items:
             tasks.append(self.search_playlists_async(semaphore, artist))

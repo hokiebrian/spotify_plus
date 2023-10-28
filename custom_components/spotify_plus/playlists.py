@@ -90,7 +90,7 @@ class SpotifyPlaylists(RestoreEntity):
     async def spotify_playlists(self, call):
         """Build Playlist Details"""
         ## Limit of 10 concurrent connections to Spotify API, reduced here to 8 to prevent pile up.
-        CONNECTION_LIMIT = 8
+        CONNECTION_LIMIT = 6
         semaphore = asyncio.Semaphore(CONNECTION_LIMIT)
 
         playlists = []

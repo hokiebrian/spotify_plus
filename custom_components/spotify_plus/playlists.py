@@ -15,17 +15,18 @@ def spotify_exception_handler(func):
     """Decorate Spotify calls to handle Spotify exception."""
 
     async def wrapper(self, *args, **kwargs):
-        # pylint: disable=protected-access
         try:
             result = await func(self, *args, **kwargs)
             self._attr_available = True
             return result
         except requests.RequestException:
             self._attr_available = False
+            _LOGGER.error("RequestException encountered.")
         except SpotifyException as exc:
             self._attr_available = False
             if exc.reason == "NO_ACTIVE_DEVICE":
                 raise HomeAssistantError("No active playback device found") from None
+            _LOGGER.error("Spotify error: %s", exc)
             raise HomeAssistantError(f"Spotify error: {exc.reason}") from exc
 
     return wrapper
@@ -57,6 +58,7 @@ class SpotifyPlaylists(RestoreEntity):
         )
 
     async def async_added_to_hass(self):
+        """Register the service when the entity is added to hass."""
         self.hass.services.async_register(
             DOMAIN, "spotify_playlists", self.spotify_playlists
         )
@@ -73,13 +75,11 @@ class SpotifyPlaylists(RestoreEntity):
     @property
     def state(self):
         """Return the state of the sensor."""
-        if self._state is not None:
-            return self._state
-        return "No Data"
+        return self._state or "No Data"
 
     @property
     def unique_id(self):
-        """Unique ID for sensor"""
+        """Return the unique ID for the sensor."""
         return f"SpotifyPlaylistTools_{self._id}"
 
     @property
@@ -87,9 +87,9 @@ class SpotifyPlaylists(RestoreEntity):
         """Return the state attributes of the sensor."""
         return self._extra_attributes
 
+    @spotify_exception_handler
     async def spotify_playlists(self, call):
-        """Build Playlist Details"""
-        ## Limit of 10 concurrent connections to Spotify API, reduced here to 8 to prevent pile up.
+        """Build Playlist Details."""
         CONNECTION_LIMIT = 6
         semaphore = asyncio.Semaphore(CONNECTION_LIMIT)
 
@@ -102,7 +102,6 @@ class SpotifyPlaylists(RestoreEntity):
                 self.data.client.current_user_playlists, limit, offset
             )
 
-            ## Check for playlists with no items
             valid_playlists = [
                 playlist
                 for playlist in user_playlists["items"]
@@ -116,7 +115,7 @@ class SpotifyPlaylists(RestoreEntity):
                 break
 
         async def analyze_playlist_async(playlist_id):
-            """Goes Deep on each playlist track - LIMIT OF 100 TRACKS!!!"""
+            """Analyze each playlist track (LIMIT OF 100 TRACKS)."""
             playlist_tracks = await self.hass.async_add_executor_job(
                 self.data.client.playlist_items,
                 playlist_id,
@@ -169,7 +168,7 @@ class SpotifyPlaylists(RestoreEntity):
             return avg_analysis
 
         async def process_playlist_async(playlist):
-            """Get Full Details, limit to provided connection limit"""
+            """Get full details, limited to provided connection limit."""
             async with semaphore:
                 playlist_id = playlist.get("uri", "")
                 analysis = await analyze_playlist_async(playlist_id)
@@ -179,32 +178,19 @@ class SpotifyPlaylists(RestoreEntity):
                     base_info["name"] = playlist.get("name", "")
                     base_info["uri"] = playlist.get("uri", "")
                     base_info["description"] = playlist.get("description", "")
-
-                    try:
-                        base_info["image"] = playlist.get("images", [{}])[0].get(
-                            "url", ""
-                        )
-                    except Exception:
-                        base_info["image"] = ""
-
-                    try:
-                        base_info["owner"] = playlist.get("owner", {}).get(
-                            "display_name", ""
-                        )
-                    except Exception:
-                        base_info["owner"] = ""
-
-                except Exception:
-                    pass
+                    base_info["image"] = playlist.get("images", [{}])[0].get("url", "")
+                    base_info["owner"] = playlist.get("owner", {}).get(
+                        "display_name", ""
+                    )
+                except Exception as e:
+                    _LOGGER.error(f"Error processing playlist info: {e}")
 
                 return {**base_info, **analysis}
 
-        ## Perform massive playlist data gathering, keeping below connection threshold
         coroutines = [process_playlist_async(playlist) for playlist in playlists]
         results = await asyncio.gather(*coroutines)
         _LOGGER.debug("All Playlists analyzed")
 
-        ## Sort properly with Daily Mix playlists at top
         daily_mix = [result for result in results if "Daily Mix" in result["name"]]
         playlist_items = [
             result for result in results if "Daily Mix" not in result["name"]

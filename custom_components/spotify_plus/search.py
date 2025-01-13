@@ -1,4 +1,5 @@
 """Sensor for Spotify Search."""
+
 import asyncio
 from typing import Any, Dict, Optional
 import requests
@@ -14,17 +15,18 @@ def spotify_exception_handler(func):
     """Decorate Spotify calls to handle Spotify exception."""
 
     async def wrapper(self, *args, **kwargs):
-        # pylint: disable=protected-access
         try:
             result = await func(self, *args, **kwargs)
             self._attr_available = True
             return result
         except requests.RequestException:
             self._attr_available = False
+            _LOGGER.error("RequestException encountered.")
         except SpotifyException as exc:
             self._attr_available = False
             if exc.reason == "NO_ACTIVE_DEVICE":
                 raise HomeAssistantError("No active playback device found") from None
+            _LOGGER.error("Spotify error: %s", exc)
             raise HomeAssistantError(f"Spotify error: {exc.reason}") from exc
 
     return wrapper
@@ -55,6 +57,7 @@ class SpotifySearch(RestoreEntity):
         )
 
     async def async_added_to_hass(self):
+        """Register the service when the entity is added to hass."""
         self.hass.services.async_register(DOMAIN, "spotify_search", self.spotify_search)
         last_state = await self.async_get_last_state()
         if last_state is not None:
@@ -69,13 +72,11 @@ class SpotifySearch(RestoreEntity):
     @property
     def state(self):
         """Return the state of the sensor."""
-        if self._state is not None:
-            return self._state
-        return "No Search"
+        return self._state or "No Search"
 
     @property
     def unique_id(self):
-        """Unique ID for sensor"""
+        """Return the unique ID for the sensor."""
         return f"SpotifySearch_{self._id}"
 
     @property
@@ -86,7 +87,6 @@ class SpotifySearch(RestoreEntity):
     @spotify_exception_handler
     async def spotify_search(self, call):
         """Perform search and divide up search results."""
-
         self._state = call.data["search_term"]
         search_param = call.data["search_term"]
         search_type = call.data["search_type"]
@@ -106,7 +106,6 @@ class SpotifySearch(RestoreEntity):
         search_items = {}
         _LOGGER.debug("Search initiated - %s ", search_param)
 
-        ## Quick search to get top artist in search to tag as main artist
         if search_type == search_artist:
             search_items = await self.hass.async_add_executor_job(
                 self.data.client.search,
@@ -117,18 +116,13 @@ class SpotifySearch(RestoreEntity):
                 self._user_country,
             )
 
+            main_artist_id = None
+            main_artist_name = None
             if search_items.get("artists", {}).get("items"):
                 main_artist_id = search_items["artists"]["items"][0]["id"]
                 main_artist_name = search_items["artists"]["items"][0]["name"]
-            else:
-                main_artist_id = None
-                main_artist_name = None
 
-            ## Build concurrent queries to get all of the data
-            if main_artist_id is None or main_artist_name is None:
-                _LOGGER.debug("Main artist ID or name not found. Skipping tasks.")
-            else:
-                # Only perform these tasks if main_artist_id and main_artist_name are not None
+            if main_artist_id and main_artist_name:
                 artist_playlists_task = self.hass.async_add_executor_job(
                     self.data.client.search,
                     main_artist_name,
@@ -158,7 +152,6 @@ class SpotifySearch(RestoreEntity):
                 artist_follow_task = self.hass.async_add_executor_job(
                     self.data.client.current_user_following_artists, [main_artist_id]
                 )
-                _LOGGER.debug("Artist %s Profile retrieved", search_param)
 
                 (
                     related_artists,
@@ -253,9 +246,11 @@ class SpotifySearch(RestoreEntity):
                         {
                             "name": item["name"],
                             "artists": None,
-                            "image": item["images"][0]["url"]
-                            if len(item["images"]) > 0
-                            else None,
+                            "image": (
+                                item["images"][0]["url"]
+                                if len(item["images"]) > 0
+                                else None
+                            ),
                             "uri": item["uri"],
                             "id": item["id"],
                             "info": item["description"],
@@ -263,7 +258,6 @@ class SpotifySearch(RestoreEntity):
                             "tracks": item["tracks"]["total"],
                         }
                         for item in artist_playlists["playlists"]["items"]
-                        ## Enhances search to return items named or described properly
                         if search_param.lower() in item["name"].lower()
                         or search_param.lower() in item["description"].lower()
                     ]
@@ -276,9 +270,11 @@ class SpotifySearch(RestoreEntity):
                 formatted_followers = (
                     f"{followers / 1000000:.1f}M"
                     if followers >= 1000000
-                    else f"{followers / 1000:.1f}k"
-                    if followers >= 1000
-                    else str(followers)
+                    else (
+                        f"{followers / 1000:.1f}k"
+                        if followers >= 1000
+                        else str(followers)
+                    )
                 )
 
                 search_results["profile"] = {
@@ -332,9 +328,11 @@ class SpotifySearch(RestoreEntity):
                     {
                         "name": item["name"],
                         "artists": item["artists"][0]["name"],
-                        "image": item["images"][0]["url"]
-                        if len(item["images"]) > 0
-                        else None,
+                        "image": (
+                            item["images"][0]["url"]
+                            if len(item["images"]) > 0
+                            else None
+                        ),
                         "uri": item["uri"],
                         "id": item["id"],
                         "info": item["name"],
@@ -356,9 +354,11 @@ class SpotifySearch(RestoreEntity):
                     {
                         "name": item["name"],
                         "artists": None,
-                        "image": item["images"][0]["url"]
-                        if len(item["images"]) > 0
-                        else None,
+                        "image": (
+                            item["images"][0]["url"]
+                            if len(item["images"]) > 0
+                            else None
+                        ),
                         "uri": item["uri"],
                         "id": item["id"],
                         "info": item["description"],
@@ -405,6 +405,7 @@ class SpotifyCategoryPlaylists(RestoreEntity):
         )
 
     async def async_added_to_hass(self):
+        """Register the service when the entity is added to hass."""
         self.hass.services.async_register(
             DOMAIN, "spotify_category_playlists", self.spotify_category_playlists
         )
@@ -421,13 +422,11 @@ class SpotifyCategoryPlaylists(RestoreEntity):
     @property
     def state(self):
         """Return the state of the sensor."""
-        if self._state is not None:
-            return self._state
-        return "No Data"
+        return self._state or "No Data"
 
     @property
     def unique_id(self):
-        """Unique ID for sensor"""
+        """Return the unique ID for the sensor."""
         return f"SpotifyCategoryPlaylists_{self._id}"
 
     @property
@@ -437,8 +436,7 @@ class SpotifyCategoryPlaylists(RestoreEntity):
 
     @spotify_exception_handler
     async def spotify_category_playlists(self, call):
-        """Get Category Playlists"""
-
+        """Get Category Playlists."""
         playlists = []
         category_name = call.data["category_name"]
         category_id = None
@@ -464,6 +462,7 @@ class SpotifyCategoryPlaylists(RestoreEntity):
         for category in category_data:
             if category["name"].lower() == category_name.lower():
                 category_id = category["id"]
+                break
 
         if category_id is not None:
             offset = 0

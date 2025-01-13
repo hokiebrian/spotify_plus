@@ -1,17 +1,20 @@
 """Config flow for Spotify."""
+
 from __future__ import annotations
 
-from collections.abc import Mapping
 import logging
+from collections.abc import Mapping
 from typing import Any
+
 import voluptuous as vol
 from spotipy import Spotify
 
+from homeassistant import config_entries
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import config_entry_oauth2_flow
-from homeassistant import config_entries
-from homeassistant.core import callback
+
 from .const import DOMAIN, SPOTIFY_SCOPES
 
 
@@ -22,17 +25,16 @@ class SpotifyFlowHandler(
 
     DOMAIN = DOMAIN
     VERSION = 1
-
     reauth_entry: ConfigEntry | None = None
 
     @property
     def logger(self) -> logging.Logger:
-        """Return logger."""
+        """Return the logger instance."""
         return logging.getLogger(__name__)
 
     @property
     def extra_authorize_data(self) -> dict[str, Any]:
-        """Extra data that needs to be appended to the authorize url."""
+        """Extra data that needs to be appended to the authorize URL."""
         return {"scope": ",".join(SPOTIFY_SCOPES)}
 
     async def async_oauth_create_entry(self, data: dict[str, Any]) -> FlowResult:
@@ -42,10 +44,10 @@ class SpotifyFlowHandler(
         try:
             current_user = await self.hass.async_add_executor_job(spotify.current_user)
         except Exception:  # pylint: disable=broad-except
+            self.logger.error("Error fetching current user", exc_info=True)
             return self.async_abort(reason="connection_error")
 
-        name = data["id"] = current_user["id"]
-
+        name = current_user["id"]
         if self.reauth_entry and self.reauth_entry.data["id"] != current_user["id"]:
             return self.async_abort(reason="reauth_account_mismatch")
 
@@ -56,6 +58,7 @@ class SpotifyFlowHandler(
         data["country"] = country.upper()
 
         await self.async_set_unique_id(current_user["id"])
+        self._abort_if_unique_id_configured()
 
         return self.async_create_entry(title=name, data=data)
 
@@ -64,7 +67,6 @@ class SpotifyFlowHandler(
         self.reauth_entry = self.hass.config_entries.async_get_entry(
             self.context["entry_id"]
         )
-
         return await self.async_step_reauth_confirm()
 
     async def async_step_reauth_confirm(
@@ -74,7 +76,7 @@ class SpotifyFlowHandler(
         if self.reauth_entry is None:
             return self.async_abort(reason="reauth_account_mismatch")
 
-        if user_input is None and self.reauth_entry:
+        if user_input is None:
             return self.async_show_form(
                 step_id="reauth_confirm",
                 description_placeholders={"account": self.reauth_entry.data["id"]},
@@ -87,7 +89,7 @@ class SpotifyFlowHandler(
 
     @staticmethod
     @callback
-    def async_get_options_flow(config_entry):
+    def async_get_options_flow(config_entry: ConfigEntry):
         """Get the options flow for this handler."""
         return SpotifySensorOptionsFlow(config_entry)
 
@@ -99,9 +101,10 @@ class SpotifySensorOptionsFlow(config_entries.OptionsFlow):
         """Initialize options flow."""
         self.config_entry = config_entry
 
-    async def async_step_init(self, user_input=None):
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
         """Handle a flow initialized by the user."""
-
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 

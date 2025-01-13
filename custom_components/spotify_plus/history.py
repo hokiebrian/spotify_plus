@@ -3,7 +3,6 @@
 import datetime
 from typing import Any, Dict, Optional
 
-# from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.entity import DeviceInfo
 from . import HomeAssistantSpotifyData
@@ -40,6 +39,7 @@ class SpotifyAddToHistory(Entity):
         )
 
     async def async_added_to_hass(self):
+        """Register the service when the entity is added to hass."""
         self.hass.services.async_register(
             DOMAIN, "spotify_add_to_history", self.spotify_add_to_history
         )
@@ -52,13 +52,11 @@ class SpotifyAddToHistory(Entity):
     @property
     def state(self):
         """Return the state of the sensor."""
-        if self._state is not None:
-            return self._state
-        return "No Recent Additions"
+        return self._state or "No Recent Additions"
 
     @property
     def unique_id(self):
-        """Unique ID for sensor"""
+        """Return the unique ID for the sensor."""
         return f"SpotifyHistory_{self._id}"
 
     @property
@@ -68,33 +66,42 @@ class SpotifyAddToHistory(Entity):
 
     async def spotify_add_to_history(self, call):
         """Add the current playing track to the specified history playlist."""
-
         current_track = await self.hass.async_add_executor_job(
             self.data.client.currently_playing, self._user_country
         )
 
-        ## Timestamp addition
-        ## Delete existing occurances, add new item to top
+        if not current_track or not current_track.get("item"):
+            _LOGGER.error("No currently playing track found.")
+            return
+
+        track_uri = current_track["item"]["uri"]
+        track_name = current_track["item"]["name"]
+
+        # Timestamp addition
         now = datetime.datetime.now()
         added_time = now.strftime("%m-%d-%Y %H:%M:%S")
+
         try:
+            # Remove existing occurrences of the track
             await self.hass.async_add_executor_job(
                 self.data.client.playlist_remove_all_occurrences_of_items,
                 self._history_playlist_id,
-                [current_track["item"]["uri"]],
+                [track_uri],
             )
+            # Add the track to the top of the playlist
             await self.hass.async_add_executor_job(
                 self.data.client.playlist_add_items,
                 self._history_playlist_id,
-                [current_track["item"]["uri"]],
+                [track_uri],
                 0,
             )
-            self._state = f"Added {current_track['item']['name']}"
-            _LOGGER.debug("Track added to History")
+            self._state = f"Added {track_name}"
+            _LOGGER.debug("Track '%s' added to history", track_name)
         except Exception as err:
             _LOGGER.error("Playlist History Add Error: %s", err)
+            return
 
-        ## Get updated playlist metadata
+        # Get updated playlist metadata
         playlist_data = await self.hass.async_add_executor_job(
             self.data.client.playlist, self._history_playlist_id
         )

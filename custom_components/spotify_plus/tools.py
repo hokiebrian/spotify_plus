@@ -74,11 +74,8 @@ class SpotifyMusicMachine(RestoreEntity):
         return self._extra_attributes
 
     async def spotify_music_machine(self, call):
-        """Build New Set of Songs(Tracks)"""
-        try:
-            MIN_MAX_TOLERANCE = float(call.data["tolerance"]) / 100
-        except KeyError:
-            MIN_MAX_TOLERANCE = self._tolerance
+        """Build New Set of Songs (Tracks)."""
+        params = self._initialize_params(call)
         playlist_name = call.data.get("name", "Spotify Plus")
         artist_count = int(float(call.data.get("count", 100)))
         artist_focus = call.data.get("focus", False)
@@ -104,114 +101,89 @@ class SpotifyMusicMachine(RestoreEntity):
 
         device_name = call.data.get("device_name", None)
         if device_name:
-            for device in self.data.devices.data:
-                if device["name"] == device_name:
-                    self.hass.async_add_executor_job(
-                        self.data.client.transfer_playback, device["id"]
-                    )
-        try:
-            SEED_ARTISTS = call.data["seed_artists"].replace(" ", "").split(",")
-        except (TypeError, ValueError, KeyError):
-            SEED_ARTISTS = []
-
-        try:
-            SEED_GENRES = call.data["seed_genres"].replace(" ", "").split(",")
-        except (TypeError, ValueError, KeyError):
-            SEED_GENRES = []
-
-        try:
-            SEED_TRACKS = call.data["seed_tracks"].replace(" ", "").split(",")
-        except (TypeError, ValueError, KeyError):
-            SEED_TRACKS = []
-
-        TARGET_VALENCE = call.data.get("valence", None)
-        if TARGET_VALENCE is not None:
-            TARGET_VALENCE = float(TARGET_VALENCE) / 100
-            TARGET_VALENCE_MIN = round(max(TARGET_VALENCE - MIN_MAX_TOLERANCE, 0), 2)
-            TARGET_VALENCE_MAX = round(min(TARGET_VALENCE + MIN_MAX_TOLERANCE, 1.0), 2)
-            params["min_valence"] = TARGET_VALENCE_MIN
-            params["max_valence"] = TARGET_VALENCE_MAX
-
-        TARGET_ENERGY = call.data.get("energy", None)
-        if TARGET_ENERGY is not None:
-            TARGET_ENERGY = float(TARGET_ENERGY) / 100
-            TARGET_ENERGY_MIN = round(max(TARGET_ENERGY - MIN_MAX_TOLERANCE, 0), 2)
-            TARGET_ENERGY_MAX = round(min(TARGET_ENERGY + MIN_MAX_TOLERANCE, 1.0), 2)
-            if TARGET_ENERGY == 1:
-                TARGET_ENERGY_MIN = 0.90
-            params["min_energy"] = TARGET_ENERGY_MIN
-            params["max_energy"] = TARGET_ENERGY_MAX
-
-        TARGET_ACOUSTIC = call.data.get("acousticness", None)
-        if TARGET_ACOUSTIC is not None:
-            TARGET_ACOUSTIC = float(TARGET_ACOUSTIC) / 100
-            TARGET_ACOUSTIC_MIN = round(max(TARGET_ACOUSTIC - MIN_MAX_TOLERANCE, 0), 2)
-            TARGET_ACOUSTIC_MAX = round(
-                min(TARGET_ACOUSTIC + MIN_MAX_TOLERANCE, 1.0), 2
-            )
-            ## Clamping to get more accurate results
-            if TARGET_ACOUSTIC == 0:
-                TARGET_ACOUSTIC_MAX = 0.10
-            if 0.10 <= TARGET_ACOUSTIC <= 0.20:
-                TARGET_ACOUSTIC_MIN = 0.01
-            params["min_acousticness"] = TARGET_ACOUSTIC_MIN
-            params["max_acousticness"] = TARGET_ACOUSTIC_MAX
-
-        TARGET_DANCE = call.data.get("danceability", None)
-        if TARGET_DANCE is not None:
-            TARGET_DANCE = float(TARGET_DANCE) / 100
-            TARGET_DANCE_MIN = round(max(TARGET_DANCE - MIN_MAX_TOLERANCE, 0), 2)
-            TARGET_DANCE_MAX = round(min(TARGET_DANCE + MIN_MAX_TOLERANCE, 1.0), 2)
-            params["min_danceability"] = TARGET_DANCE_MIN
-            params["max_danceability"] = TARGET_DANCE_MAX
-
-        TARGET_INSTRUMENTAL = call.data.get("instrumentalness", None)
-        if TARGET_INSTRUMENTAL is not None:
-            TARGET_INSTRUMENTAL = float(TARGET_INSTRUMENTAL) / 100
-            TARGET_INSTRUMENTAL_MIN = round(
-                max(TARGET_INSTRUMENTAL - MIN_MAX_TOLERANCE, 0), 2
-            )
-            TARGET_INSTRUMENTAL_MAX = round(
-                min(TARGET_INSTRUMENTAL + MIN_MAX_TOLERANCE, 1.0), 2
-            )
-            params["min_instrumentalness"] = TARGET_INSTRUMENTAL_MIN
-            params["max_instrumentalness"] = TARGET_INSTRUMENTAL_MAX
-
-        TARGET_LIVENESS = call.data.get("liveness", None)
-        if TARGET_LIVENESS is not None:
-            TARGET_LIVENESS = float(TARGET_LIVENESS) / 100
-            TARGET_LIVENESS_MIN = round(max(TARGET_LIVENESS - MIN_MAX_TOLERANCE, 0), 2)
-            TARGET_LIVENESS_MAX = round(
-                min(TARGET_LIVENESS + MIN_MAX_TOLERANCE, 1.0), 2
-            )
-            params["min_liveness"] = TARGET_LIVENESS_MIN
-            params["max_liveness"] = TARGET_LIVENESS_MAX
-
-        TARGET_SPEECHINESS = call.data.get("speechiness", None)
-        if TARGET_SPEECHINESS is not None:
-            TARGET_SPEECHINESS = float(TARGET_SPEECHINESS) / 100
-            TARGET_SPEECHINESS_MIN = round(
-                max(TARGET_SPEECHINESS - MIN_MAX_TOLERANCE, 0), 2
-            )
-            TARGET_SPEECHINESS_MAX = round(
-                min(TARGET_SPEECHINESS + MIN_MAX_TOLERANCE, 1.0), 2
-            )
-            params["min_speechinness"] = TARGET_SPEECHINESS_MIN
-            params["max_speechiness"] = TARGET_SPEECHINESS_MAX
-
-        TARGET_POP = call.data.get("popularity", None)
-        if TARGET_POP is not None:
-            TARGET_POP = int(float(TARGET_POP))
-            TARGET_POP_MIN = int(max(TARGET_POP - (MIN_MAX_TOLERANCE * 100), 0))
-            TARGET_POP_MAX = int(min(TARGET_POP + (MIN_MAX_TOLERANCE * 100), 100))
-            params["min_popularity"] = TARGET_POP_MIN
-            params["max_popularity"] = TARGET_POP_MAX
+            await self._transfer_playback(device_name)
 
         playlists = await self.hass.async_add_executor_job(
             self.data.client.current_user_playlists
         )
 
+        existing_pl_flag, existing_playlist_uri, existing_playlist_item_uris = (
+            await self._check_existing_playlist(playlists, call)
+        )
+
+        if not (params.get("seed_artists") or params.get("seed_genres") or params.get("seed_tracks")):
+            rec_tracks, seed_details = await self._get_recommendations_without_seeds(
+                call, params, artist_count, artist_focus, time_range
+            )
+        else:
+            rec_tracks, seed_details = await self._get_recommendations_with_seeds(
+                call, params
+            )
+
+        rec_tracks = random.sample(rec_tracks, min(len(rec_tracks), 100))
+        random.shuffle(rec_tracks)
+        _LOGGER.debug("Spotify Recommended Tracks Selected")
+
         if create_playlist:
+            context_playlist = await self._create_or_update_playlist(
+                existing_pl_flag, existing_playlist_uri, rec_tracks, playlist_name, playlist_desc
+            )
+
+        if play_now:
+            await self._start_playback(context_playlist, rec_tracks)
+
+        self._update_state_and_attributes(
+            playlist_name, context_playlist, formatted_time, seed_details, params, random_track_names, random_artist_names
+        )
+
+    def _initialize_params(self, call):
+        """Initialize parameters for recommendations."""
+        params = {
+            "limit": self._track_count,
+            "country": self._user_country,
+        }
+        tolerance = float(call.data.get("tolerance", self._tolerance)) / 100
+
+        self._set_target_params(call, params, tolerance, "valence")
+        self._set_target_params(call, params, tolerance, "energy")
+        self._set_target_params(call, params, tolerance, "acousticness")
+        self._set_target_params(call, params, tolerance, "danceability")
+        self._set_target_params(call, params, tolerance, "instrumentalness")
+        self._set_target_params(call, params, tolerance, "liveness")
+        self._set_target_params(call, params, tolerance, "speechiness")
+        self._set_target_params(call, params, tolerance, "popularity", is_int=True)
+
+        return params
+
+    def _set_target_params(self, call, params, tolerance, param, is_int=False):
+        """Set target parameters with min and max values."""
+        target_value = call.data.get(param)
+        if target_value is not None:
+            try:
+                target_value = int(float(target_value)) if is_int else float(target_value) / 100
+                min_value = max(target_value - tolerance, 0)
+                max_value = min(target_value + tolerance, 1.0 if not is_int else 100)
+                params[f"min_{param}"] = round(min_value, 2)
+                params[f"max_{param}"] = round(max_value, 2)
+            except ValueError as e:
+                _LOGGER.error(f"Error setting target parameter {param}: {e}")
+
+    async def _transfer_playback(self, device_name):
+        """Transfer playback to a specified device."""
+        for device in self.data.devices.data:
+            if device["name"] == device_name:
+                await self.hass.async_add_executor_job(
+                    self.data.client.transfer_playback, device["id"]
+                )
+
+    async def _check_existing_playlist(self, playlists, call):
+        """Check if the playlist already exists and remove its items if necessary."""
+        existing_pl_flag = False
+        existing_playlist_uri = None
+        existing_playlist_item_uris = []
+
+        playlist_name = call.data.get("name", "Spotify Plus")
+        if call.data.get("create_playlist", True):
             for playlist in playlists["items"]:
                 if playlist["name"] == playlist_name:
                     existing_pl_flag = True
@@ -232,223 +204,222 @@ class SpotifyMusicMachine(RestoreEntity):
                         existing_playlist_item_uris,
                     )
 
-        if not (SEED_ARTISTS or SEED_GENRES or SEED_TRACKS):
-            ## This is a hack to get beyond 50 Top Tracks to 99
-            resultst1_task = self.hass.async_add_executor_job(
-                self.data.client.current_user_top_tracks, 49, 0, time_range
-            )
-            resultst2_task = self.hass.async_add_executor_job(
-                self.data.client.current_user_top_tracks, 50, 49, time_range
-            )
-            resultst1, resultst2 = await asyncio.gather(resultst1_task, resultst2_task)
+        return existing_pl_flag, existing_playlist_uri, existing_playlist_item_uris
 
-            top_tracks = [
-                (track["id"], track["name"])
-                for result in (resultst1, resultst2)
-                for track in result["items"]
+    async def _get_recommendations_without_seeds(self, call, params, artist_count, artist_focus, time_range):
+        """Get recommendations without user-provided seeds."""
+        rec_tracks = []
+        seed_details = {}
+        
+        resultst1_task = self.hass.async_add_executor_job(
+            self.data.client.current_user_top_tracks, 49, 0, time_range
+        )
+        resultst2_task = self.hass.async_add_executor_job(
+            self.data.client.current_user_top_tracks, 50, 49, time_range
+        )
+        resultst1, resultst2 = await asyncio.gather(resultst1_task, resultst2_task)
+
+        top_tracks = [
+            (track["id"], track["name"])
+            for result in (resultst1, resultst2)
+            for track in result["items"]
+        ]
+        random_tracks = random.sample(top_tracks, k=5)
+        random_track_ids, random_track_names = zip(*random_tracks)
+
+        if artist_focus:
+            results = await self.hass.async_add_executor_job(
+                self.data.client.current_user_followed_artists, 50
+            )
+            artists = [
+                (artist["id"], artist["name"], artist["genres"])
+                for artist in results["artists"]["items"]
             ]
-            tracks.extend(top_tracks)
-
-            random_tracks = random.sample(tracks, k=5)
-            random_track_ids, random_track_names = zip(*random_tracks)
-
-            if artist_focus:
-                ## Option for playlist from my followed artists or my top artists. If my artists, no time_range applies
-                results = await self.hass.async_add_executor_job(
-                    self.data.client.current_user_followed_artists, 50
-                )
-
-                while results:
-                    artists.extend(
-                        (artist["id"], artist["name"], artist["genres"])
-                        for artist in results["artists"]["items"]
-                    )
-                    if results["artists"]["next"]:
-                        results = await self.hass.async_add_executor_job(
-                            self.data.client.next, (results["artists"])
-                        )
-                    else:
-                        break
-
-            else:
-                ## Spotify is only supposed to allow 50 Top Artists. Calling the max with an offset of 49 can get a total of 99
-                results1_task = self.hass.async_add_executor_job(
-                    self.data.client.current_user_top_artists, 49, 0, time_range
-                )
-                results2_task = self.hass.async_add_executor_job(
-                    self.data.client.current_user_top_artists, 50, 49, time_range
-                )
-                results1, results2 = await asyncio.gather(results1_task, results2_task)
-
-                artists = [
-                    (artist["id"], artist["name"], artist["genres"])
-                    for result in (results1, results2)
-                    for artist in result["items"]
-                ]
-                artists = artists[:artist_count]
-
-            _LOGGER.debug("Spotify Artist List Retrieved")
-
-            random_artists = random.sample(artists, k=10)
-            random_artist_ids, random_artist_names, unique_genres = zip(*random_artists)
-            unique_genres = list(
-                set(genre for artist in random_artists for genre in artist[2])
-            )
-            unique_genres = sorted(unique_genres)
-
-            params1 = params.copy()
-            params1["seed_artists"] = list(random_artist_ids[:5])
-
-            params2 = params.copy()
-            params2["seed_artists"] = list(random_artist_ids[-5:])
-
-            params3 = params.copy()
-            params3["seed_tracks"] = list(random_track_ids[:5])
-
-            recs1_task = self.hass.async_add_executor_job(
-                lambda: self.data.client.recommendations(**params1)
-            )
-            recs2_task = self.hass.async_add_executor_job(
-                lambda: self.data.client.recommendations(**params2)
-            )
-            recs3_task = self.hass.async_add_executor_job(
-                lambda: self.data.client.recommendations(**params3)
-            )
-            _LOGGER.debug("Spotify Parameters %s", params)
-
-            recs1, recs2, recs3 = await asyncio.gather(
-                recs1_task, recs2_task, recs3_task
-            )
-
-            rec_tracks = list(
-                set(
-                    [tracks["uri"] for tracks in recs1["tracks"]]
-                    + [tracks["uri"] for tracks in recs2["tracks"]]
-                )
-            )
-
-            ## Checks if song list is less than 50% of the intended size. If so, add in 25% from Top Tracks seed.
-            if len(rec_tracks) < int(self._track_count / 2):
-                recs3_tracks = [track["uri"] for track in recs3["tracks"]]
-                random.shuffle(recs3_tracks)  # Shuffle the tracks in place
-                rec_tracks = list(
-                    set(
-                        [track["uri"] for track in recs1["tracks"]]
-                        + [track["uri"] for track in recs2["tracks"]]
-                        + recs3_tracks[: int(self._track_count / 4)]
-                    )
-                )
-
-            seed_details = {
-                "Recs1": recs1["seeds"],
-                "Recs2": recs2["seeds"],
-                "Recs3": recs3["seeds"],
-            }
-
         else:
-            paramsx = params.copy()
+            results1_task = self.hass.async_add_executor_job(
+                self.data.client.current_user_top_artists, 49, 0, time_range
+            )
+            results2_task = self.hass.async_add_executor_job(
+                self.data.client.current_user_top_artists, 50, 49, time_range
+            )
+            results1, results2 = await asyncio.gather(results1_task, results2_task)
 
-            if len(SEED_ARTISTS) > 0:
-                paramsx["seed_artists"] = SEED_ARTISTS
-                artists_info = await self.hass.async_add_executor_job(
-                    self.data.client.artists, SEED_ARTISTS
-                )
-                random_artist_names = [
-                    artist["name"] for artist in artists_info["artists"]
-                ]
+            artists = [
+                (artist["id"], artist["name"], artist["genres"])
+                for result in (results1, results2)
+                for artist in result["items"]
+            ]
+            artists = artists[:artist_count]
 
-            if len(SEED_GENRES) > 0:
-                paramsx["seed_genres"] = SEED_GENRES
-                unique_genres = SEED_GENRES
+        random_artists = random.sample(artists, k=10)
+        random_artist_ids, random_artist_names, unique_genres = zip(*random_artists)
+        unique_genres = list(
+            set(genre for artist in random_artists for genre in artist[2])
+        )
+        unique_genres = sorted(unique_genres)
 
-            if len(SEED_TRACKS) > 0:
-                paramsx["seed_tracks"] = SEED_TRACKS
-                tracks_info = await self.hass.async_add_executor_job(
-                    self.data.client.tracks, SEED_TRACKS
-                )
-                random_track_names = [track["name"] for track in tracks_info["tracks"]]
+        params1, params2, params3 = params.copy(), params.copy(), params.copy()
+        params1["seed_artists"] = list(random_artist_ids[:5])
+        params2["seed_artists"] = list(random_artist_ids[-5:])
+        params3["seed_tracks"] = list(random_track_ids[:5])
 
-            _LOGGER.debug("User Provided Seed Params: %s", paramsx)
+        recs1_task = self.hass.async_add_executor_job(
+            lambda: self.data.client.recommendations(**params1)
+        )
+        recs2_task = self.hass.async_add_executor_job(
+            lambda: self.data.client.recommendations(**params2)
+        )
+        recs3_task = self.hass.async_add_executor_job(
+            lambda: self.data.client.recommendations(**params3)
+        )
+        _LOGGER.debug("Spotify Parameters %s", params)
 
-            recsx = await self.hass.async_add_executor_job(
-                lambda: self.data.client.recommendations(**paramsx)
+        recs1, recs2, recs3 = await asyncio.gather(recs1_task, recs2_task, recs3_task)
+
+        rec_tracks = list(
+            set(
+                [tracks["uri"] for tracks in recs1["tracks"]]
+                + [tracks["uri"] for tracks in recs2["tracks"]]
+            )
+        )
+
+        if len(rec_tracks) < int(self._track_count / 2):
+            recs3_tracks = [track["uri"] for track in recs3["tracks"]]
+            random.shuffle(recs3_tracks)
+            rec_tracks = list(
+                set(rec_tracks + recs3_tracks[: int(self._track_count / 4)])
             )
 
-            seed_details = {
-                "Recs": recsx["seeds"],
-            }
+        seed_details = {
+            "Recs1": {"artists": list(random_artist_names[:5])},
+            "Recs2": {"artists": list(random_artist_names[-5:])},
+            "Recs3": {"tracks": list(random_track_names[:5])},
+        }
 
-            rec_tracks = list([tracks["uri"] for tracks in recsx["tracks"]])
+        return rec_tracks, seed_details
 
-        ## Shuffle it up a few times
-        rec_tracks = random.sample(rec_tracks, min(len(rec_tracks), 100))
-        random.shuffle(rec_tracks)
+    async def _get_recommendations_with_seeds(self, call, params):
+        """Get recommendations with user-provided seeds."""
+        paramsx = params.copy()
+        rec_tracks = []
+        seed_details = {}
+        random_artist_names = []
+        unique_genres = []
+        random_track_names = []
 
-        _LOGGER.debug("Spotify Recommended Tracks Selected")
+        seed_artists = call.data.get("seed_artists", "").replace(" ", "").split(",")
+        seed_genres = call.data.get("seed_genres", "").replace(" ", "").split(",")
+        seed_tracks = call.data.get("seed_tracks", "").replace(" ", "").split(",")
 
-        if create_playlist:
-            try:
-                if existing_pl_flag:
-                    await self.hass.async_add_executor_job(
-                        self.data.client.user_playlist_add_tracks,
-                        self._id,
-                        existing_playlist_uri,
-                        list(rec_tracks),
-                    )
-                    await self.hass.async_add_executor_job(
-                        self.data.client.user_playlist_change_details,
-                        self._id,
-                        existing_playlist_uri,
-                        playlist_name,
-                        False,
-                        False,
-                        playlist_desc,
-                    )
-                    context_playlist = existing_playlist_uri
-                else:
-                    create_playlist = await self.hass.async_add_executor_job(
-                        self.data.client.user_playlist_create,
-                        self._id,
-                        playlist_name,
-                        False,
-                        False,
-                        playlist_desc,
-                    )
-                    context_playlist = create_playlist["uri"]
-                    await self.hass.async_add_executor_job(
-                        self.data.client.user_playlist_add_tracks,
-                        self._id,
-                        context_playlist,
-                        list(rec_tracks),
-                    )
-            except Exception as err:
-                _LOGGER.error("Playlist Creation Failure: %s", err)
-        _LOGGER.debug("Playlist URI %s", context_playlist)
+        if seed_artists:
+            paramsx["seed_artists"] = seed_artists
+            artists_info = await self.hass.async_add_executor_job(
+                self.data.client.artists, seed_artists
+            )
+            random_artist_names = [artist["name"] for artist in artists_info["artists"]]
+
+        if seed_genres:
+            paramsx["seed_genres"] = seed_genres
+            unique_genres = seed_genres
+
+        if seed_tracks:
+            paramsx["seed_tracks"] = seed_tracks
+            tracks_info = await self.hass.async_add_executor_job(
+                self.data.client.tracks, seed_tracks
+            )
+            random_track_names = [track["name"] for track in tracks_info["tracks"]]
+
+        _LOGGER.debug("User Provided Seed Params: %s", paramsx)
+
+        recsx = await self.hass.async_add_executor_job(
+            lambda: self.data.client.recommendations(**paramsx)
+        )
+
+        seed_details = {
+            "Recs": {
+                "artists": random_artist_names,
+                "tracks": random_track_names,
+                "genres": unique_genres,
+            },
+        }
+
+        rec_tracks = [tracks["uri"] for tracks in recsx["tracks"]]
+
+        return rec_tracks, seed_details
+
+    async def _create_or_update_playlist(
+        self, existing_pl_flag, existing_playlist_uri, rec_tracks, playlist_name, playlist_desc
+    ):
+        """Create or update a playlist with the recommended tracks."""
+        context_playlist = "Queue Only"
 
         try:
-            if play_now and not create_playlist:
+            if existing_pl_flag:
+                await self.hass.async_add_executor_job(
+                    self.data.client.user_playlist_add_tracks,
+                    self._id,
+                    existing_playlist_uri,
+                    list(rec_tracks),
+                )
+                await self.hass.async_add_executor_job(
+                    self.data.client.user_playlist_change_details,
+                    self._id,
+                    existing_playlist_uri,
+                    playlist_name,
+                    False,
+                    False,
+                    playlist_desc,
+                )
+                context_playlist = existing_playlist_uri
+            else:
+                create_playlist = await self.hass.async_add_executor_job(
+                    self.data.client.user_playlist_create,
+                    self._id,
+                    playlist_name,
+                    False,
+                    False,
+                    playlist_desc,
+                )
+                context_playlist = create_playlist["uri"]
+                await self.hass.async_add_executor_job(
+                    self.data.client.user_playlist_add_tracks,
+                    self._id,
+                    context_playlist,
+                    list(rec_tracks),
+                )
+        except Exception as err:
+            _LOGGER.error("Playlist Creation Failure: %s", err)
+
+        _LOGGER.debug("Playlist URI %s", context_playlist)
+        return context_playlist
+
+    async def _start_playback(self, context_playlist, rec_tracks):
+        """Start playback of the recommended tracks."""
+        try:
+            if context_playlist == "Queue Only":
                 await self.hass.async_add_executor_job(
                     self.data.client.start_playback, None, None, rec_tracks
                 )
-                playlist_name = "Queue Only"
                 _LOGGER.debug("Queue Created")
-
-            if play_now and create_playlist:
+            else:
                 await self.hass.async_add_executor_job(
                     self.data.client.start_playback, None, context_playlist
                 )
                 _LOGGER.debug("Playlist %s Created", context_playlist)
-
         except Exception as e:
             _LOGGER.error(f"Error occurred during playback: {e}")
 
+    def _update_state_and_attributes(
+        self, playlist_name, context_playlist, formatted_time, seed_details, params, random_track_names, random_artist_names
+    ):
+        """Update the state and attributes of the sensor."""
         results_meta = {
             "Playlist Name": playlist_name,
             "Playlist ID": context_playlist,
-            "Number of Tracks": len(rec_tracks),
-            "Artists": random_artist_names,
-            "Tracks": list(random_track_names),
-            "Genres": unique_genres,
+            "Number of Tracks": len(random_track_names),
+            "Artists": seed_details.get("Recs", {}).get("artists", []),
+            "Tracks": seed_details.get("Recs", {}).get("tracks", []),
+            "Genres": seed_details.get("Recs", {}).get("genres", []),
             "Stats": params,
             "Seed Details": seed_details,
         }
